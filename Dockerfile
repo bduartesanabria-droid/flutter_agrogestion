@@ -1,6 +1,16 @@
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+FROM debian:bookworm-slim AS build
 
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils zip libglu1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
+
+RUN git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "${FLUTTER_HOME}" \
+    && flutter precache --web
 
 COPY pubspec.yaml pubspec.lock ./
 RUN flutter pub get
