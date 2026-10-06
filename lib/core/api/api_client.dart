@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
@@ -15,13 +17,19 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({http.Client? client, String? baseUrl})
     : _client = client ?? http.Client(),
-      _baseUrl =
-          (baseUrl ??
-                  const String.fromEnvironment(
-                    'API_BASE_URL',
-                    defaultValue: 'http://localhost:8000',
-                  ))
-              .replaceFirst(RegExp(r'/+$'), '');
+      _baseUrl = (baseUrl ?? _resolveBaseUrl()).replaceFirst(
+        RegExp(r'/+$'),
+        '',
+      );
+
+  static String _resolveBaseUrl() {
+    const fromEnv = String.fromEnvironment('API_BASE_URL');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:8000';
+    }
+    return 'http://localhost:8000';
+  }
 
   final http.Client _client;
   final String _baseUrl;
@@ -34,6 +42,18 @@ class ApiClient {
     final uri = _uri(path, query);
     final response = await _client.get(uri, headers: _headers(token));
     return _decode(response);
+  }
+
+  /// Comprueba que la API responde y que el navegador puede alcanzarla.
+  Future<bool> checkConnection() async {
+    try {
+      await get('health');
+      return true;
+    } on ApiException {
+      return false;
+    } on http.ClientException {
+      return false;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getList(
