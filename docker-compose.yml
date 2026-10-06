@@ -1,0 +1,9 @@
+services:
+  agrogestion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        API_BASE_URL: ${API_BASE_URL:?Define API_BASE_URL en las variables de Coolify}
+    expose:
+      - "80"
