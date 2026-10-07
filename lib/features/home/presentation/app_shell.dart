@@ -364,42 +364,45 @@ class _PageFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SafeArea(
     child: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1280),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: agroInk,
-                              ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(color: agroMuted),
-                        ),
-                      ],
+      child: SizedBox(
+        width: double.infinity,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1280),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: agroInk,
+                                ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(color: agroMuted),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  ?action,
-                ],
-              ),
-              const SizedBox(height: 28),
-              Expanded(child: child),
-            ],
+                    ?action,
+                  ],
+                ),
+                const SizedBox(height: 28),
+                Expanded(child: child),
+              ],
+            ),
           ),
         ),
       ),
