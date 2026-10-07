@@ -2,10 +2,11 @@
 
 ## Arquitectura local
 
-- Backend: FastAPI en `http://localhost:8000`.
+- Backend remoto: FastAPI en `https://bckagestion.proyecto.sbs`.
+- Backend local opcional: FastAPI en `http://localhost:8000`.
 - Frontend: Flutter Web en `http://localhost:8080`.
 - CORS permitido: `http://localhost:8080`.
-- Salud de la API: `GET http://localhost:8000/health`.
+- Salud de la API remota: `GET https://bckagestion.proyecto.sbs/health`.
 
 ## Backend
 
@@ -31,17 +32,17 @@ Desde `C:\Users\ASUS\Documents\GitHub\flutter_agrogestion`:
 
 ```powershell
 flutter pub get
-flutter run -d chrome --web-port=8080 --dart-define=API_BASE_URL=http://localhost:8000
+flutter run -d chrome --web-port=8080 --dart-define=API_BASE_URL=https://bckagestion.proyecto.sbs
 ```
 
-`ApiClient` usa `String.fromEnvironment('API_BASE_URL')`. Si no se especifica, Flutter Web usa `http://localhost:8000` como valor local por defecto.
+`ApiClient` usa `String.fromEnvironment('API_BASE_URL')`. Si no se especifica, Flutter Web usa `https://bckagestion.proyecto.sbs` por defecto.
 
 ## Prueba rápida
 
 Antes de abrir Flutter, verifica:
 
 ```powershell
-Invoke-WebRequest http://localhost:8000/health
+Invoke-WebRequest https://bckagestion.proyecto.sbs/health
 ```
 
 Desde Dart también se puede comprobar con:
