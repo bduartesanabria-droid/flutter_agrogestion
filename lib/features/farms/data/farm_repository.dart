@@ -1,25 +1,47 @@
-// The repository keeps its API client private behind the public constructor.
-// ignore_for_file: prefer_initializing_formals
-
-import '../../../core/api/api_client.dart';
+import '../../../core/api/backend.dart';
 import '../domain/farm.dart';
 
 class FarmRepository {
-  const FarmRepository({required ApiClient api}) : _api = api;
+  const FarmRepository(this._backend);
 
-  final ApiClient _api;
+  final Backend _backend;
 
-  Future<List<Farm>> list(String token) async {
-    final response = await _api.getList('fincas', token: token);
-    return response.map(Farm.fromJson).toList();
-  }
+  Future<List<Farm>> list() async =>
+      (await _backend.getList('fincas')).map(Farm.fromJson).toList();
 
-  Future<Farm> create(String token, String name) async {
-    final response = await _api.post(
+  Future<Farm> create({
+    required String name,
+    double? areaHa,
+    String? departmentCode,
+    String? municipalityCode,
+  }) async {
+    final response = await _backend.post(
       'fincas',
-      token: token,
-      body: {'nombre': name},
+      body: {
+        'nombre': name,
+        'area_ha': ?areaHa,
+        'departamento_dane': ?departmentCode,
+        'municipio_dane': ?municipalityCode,
+      },
     );
     return Farm.fromJson(response);
+  }
+
+  Future<List<Lot>> lots(String farmId) async =>
+      (await _backend.getList('fincas/$farmId/lotes'))
+          .map(Lot.fromJson)
+          .toList();
+
+  Future<Lot> createLot(
+    String farmId, {
+    required String name,
+    required double areaHa,
+    String? notes,
+  }) async {
+    final response = await _backend.post(
+      'fincas/$farmId/lotes',
+      body: {'nombre': name, 'area': areaHa, 'notas': ?notes},
+    );
+    return Lot.fromJson(response);
   }
 }

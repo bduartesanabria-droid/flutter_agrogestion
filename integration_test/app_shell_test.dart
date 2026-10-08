@@ -1,74 +1,34 @@
-import 'package:agrogestion/core/api/api_client.dart';
+import 'package:agrogestion/app/agrogestion_app.dart';
 import 'package:agrogestion/features/auth/data/auth_repository.dart';
-import 'package:agrogestion/features/auth/domain/auth_session.dart';
-import 'package:agrogestion/features/home/presentation/app_shell.dart';
-import 'package:agrogestion/features/farms/data/farm_repository.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import '../test/support/fake_api.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('navega por el panel principal y sus modulos', (tester) async {
-    final api = ApiClient(baseUrl: 'http://localhost:8000');
+  testWidgets('el agricultor recorre las pestañas principales', (tester) async {
+    final api = FakeBackend().client();
     final auth = AuthRepository(
       api: api,
       storage: const FlutterSecureStorage(),
     );
-    final session = const AuthSession(
-      token: 'frontend-test-token',
-      userId: 'frontend-test-user',
-      email: 'agricultor@prueba.com',
-      name: 'Cristian Agricultor',
-      role: 'agricultor',
-    );
+    await auth.signIn(email: 'agricultor@demo.com', password: '1234');
 
-    await tester.pumpWidget(
-      TestApp(
-        session: session,
-        authRepository: auth,
-        farmRepository: FarmRepository(api: api),
-      ),
-    );
+    await tester.pumpWidget(AgroGestionApp(api: api, authRepository: auth));
     await tester.pumpAndSettle();
-
-    expect(find.text('Buenos días, Cristian'), findsOneWidget);
-    expect(find.text('Resumen de hoy'), findsOneWidget);
+    expect(find.text('RESUMEN DE HOY'), findsOneWidget);
 
     await tester.tap(find.text('Producción'));
     await tester.pumpAndSettle();
-    expect(find.text('Siembras en curso'), findsOneWidget);
-    expect(find.text('Café · Lote 2'), findsOneWidget);
+    expect(find.text('BALANCE OPERATIVO ACTUAL'), findsOneWidget);
 
     await tester.tap(find.text('Dinero'));
     await tester.pumpAndSettle();
-    expect(find.text('Movimientos recientes'), findsOneWidget);
+    expect(find.text('DISTRIBUCIÓN DEL GASTO'), findsOneWidget);
 
     api.close();
   });
-}
-
-class TestApp extends StatelessWidget {
-  const TestApp({
-    required this.session,
-    required this.authRepository,
-    required this.farmRepository,
-    super.key,
-  });
-
-  final AuthSession session;
-  final AuthRepository authRepository;
-  final FarmRepository farmRepository;
-
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-        home: AppShell(
-          session: session,
-          authRepository: authRepository,
-          farmRepository: farmRepository,
-          onSignOut: () async {},
-        ),
-      );
 }

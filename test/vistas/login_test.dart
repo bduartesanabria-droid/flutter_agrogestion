@@ -9,7 +9,7 @@ void main() {
   testWidgets('shows AgroGestion sign in form', (tester) async {
     await tester.pumpWidget(_testApp());
 
-    expect(find.text('AgroGestion'), findsOneWidget);
+    expect(find.text('AgroGestión'), findsOneWidget);
     expect(find.text('Iniciar sesión'), findsOneWidget);
     expect(find.byKey(const Key('login_email')), findsOneWidget);
     expect(find.byKey(const Key('login_password')), findsOneWidget);

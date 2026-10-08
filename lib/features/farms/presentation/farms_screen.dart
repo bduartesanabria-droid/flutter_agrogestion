@@ -1,158 +1,113 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/app_theme.dart';
-import '../../../core/api/api_client.dart';
-import '../../auth/domain/auth_session.dart';
-import '../data/farm_repository.dart';
+import '../../../app/app_scope.dart';
+import '../../../core/format.dart';
+import '../../../core/theme/tokens.dart';
+import '../../../core/widgets/cards.dart';
+import '../../../core/widgets/chips.dart';
+import '../../../core/widgets/feedback.dart';
+import '../../../core/widgets/forms.dart';
+import '../../../core/widgets/layout.dart';
+import '../../../core/widgets/states.dart';
 import '../domain/farm.dart';
+import 'farm_detail_screen.dart';
 
 class FarmsScreen extends StatefulWidget {
-  const FarmsScreen({
-    required this.session,
-    required this.repository,
-    super.key,
-  });
-
-  final AuthSession session;
-  final FarmRepository repository;
+  const FarmsScreen({super.key});
 
   @override
   State<FarmsScreen> createState() => _FarmsScreenState();
 }
 
 class _FarmsScreenState extends State<FarmsScreen> {
-  late Future<List<Farm>> _farmsFuture;
+  String _query = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _reload();
-  }
-
-  void _reload() => _farmsFuture = widget.repository.list(widget.session.token);
-
-  bool get _canCreate =>
-      widget.session.role == 'admin' || widget.session.role == 'agricultor';
-
-  Future<void> _createFarm() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nueva finca'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 150,
-          decoration: const InputDecoration(labelText: 'Nombre de la finca'),
-          textCapitalization: TextCapitalization.words,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+  Future<void> _create() async {
+    final app = context.app;
+    final ok = await showAgroSheet<bool>(
+      context,
+      builder: (_) => _FarmForm(app: app),
     );
-    controller.dispose();
-    if (name == null || name.isEmpty || !mounted) return;
-
-    try {
-      await widget.repository.create(widget.session.token, name);
-      if (!mounted) return;
-      setState(_reload);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Finca registrada.')));
-    } on ApiException catch (error) {
-      if (mounted) {
-        _showMessage(error.message);
-      }
-    } catch (_) {
-      if (mounted) {
-        _showMessage('No se pudo registrar la finca. Intente de nuevo.');
-      }
-    }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    if (ok == true) await app.loadFarms();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            title: const Text('Mis fincas'),
-            actions: _canCreate
-                ? [
-                    IconButton(
-                      tooltip: 'Registrar finca',
-                      onPressed: _createFarm,
-                      icon: const Icon(Icons.add),
-                    ),
-                  ]
-                : null,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            sliver: SliverToBoxAdapter(
-              child: FutureBuilder<List<Farm>>(
-                future: _farmsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.only(top: 80),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    final message = snapshot.error is ApiException
-                        ? (snapshot.error! as ApiException).message
-                        : 'No pudimos cargar sus fincas.';
-                    return _ErrorState(
-                      message: message,
-                      onRetry: () => setState(_reload),
-                    );
-                  }
-                  final farms = snapshot.data ?? const <Farm>[];
-                  if (farms.isEmpty) return const _EmptyFarmsState();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Las fincas a las que tiene acceso.',
-                        style: TextStyle(color: agroMuted),
-                      ),
-                      const SizedBox(height: 16),
-                      for (final farm in farms) ...[
-                        _FarmCard(farm: farm),
-                        const SizedBox(height: 11),
-                      ],
-                      const SizedBox(height: 10),
-                      if (_canCreate)
-                        OutlinedButton.icon(
-                          onPressed: _createFarm,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Registrar finca'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+    final app = context.app;
+    final farms = app.farms
+        .where((f) => f.name.toLowerCase().contains(_query.toLowerCase()))
+        .toList();
+    final total = app.farms.fold<double>(0, (s, f) => s + (f.areaHa ?? 0));
+    return DetailScaffold(
+      title: 'Mis fincas',
+      subtitle: 'Fincas y lotes',
+      floating: app.access.createsFarms
+          ? FloatingActionButton.extended(
+              onPressed: _create,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Nueva finca'),
+            )
+          : null,
+      body: AgroPage(
+        onRefresh: app.loadFarms,
+        children: [
+          EqualGrid(
+            columns: 2,
+            children: [
+              KpiTile(
+                label: 'Área registrada',
+                value: formatNumber(total, decimals: 1),
+                icon: Icons.landscape_outlined,
+                caption: 'hectáreas en total',
               ),
+              KpiTile(
+                label: 'Fincas',
+                value: formatNumber(app.farms.length),
+                icon: Icons.domain_outlined,
+                caption: 'a su cargo',
+                badgeBackground: AgroColors.surfaceHigh,
+                badgeForeground: AgroColors.primaryContainer,
+              ),
+            ],
+          ),
+          const Gap(16),
+          TextField(
+            onChanged: (v) => setState(() => _query = v),
+            decoration: const InputDecoration(
+              hintText: 'Buscar finca',
+              prefixIcon: Icon(Icons.search_rounded),
             ),
           ),
+          const Gap(16),
+          if (app.farmsLoading && app.farms.isEmpty)
+            const SkeletonList()
+          else if (app.farmsError != null && app.farms.isEmpty)
+            ErrorState(message: app.farmsError!, onRetry: app.loadFarms)
+          else if (farms.isEmpty)
+            AgroCard(
+              child: EmptyState(
+                icon: Icons.landscape_outlined,
+                title: _query.isEmpty
+                    ? 'Registre su primera finca para empezar'
+                    : 'No hay fincas con ese nombre',
+                message: _query.isEmpty
+                    ? 'Con una finca puede crear lotes, siembras y llevar sus cuentas.'
+                    : null,
+                actionLabel: app.access.createsFarms && _query.isEmpty
+                    ? 'Nueva finca'
+                    : null,
+                onAction: _create,
+              ),
+            )
+          else
+            for (final farm in farms)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _FarmCard(
+                  farm: farm,
+                  active: farm.id == app.activeFarm?.id,
+                ),
+              ),
         ],
       ),
     );
@@ -160,104 +115,118 @@ class _FarmsScreenState extends State<FarmsScreen> {
 }
 
 class _FarmCard extends StatelessWidget {
-  const _FarmCard({required this.farm});
+  const _FarmCard({required this.farm, required this.active});
 
   final Farm farm;
+  final bool active;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 17, vertical: 10),
-      leading: const CircleAvatar(
-        backgroundColor: Color(0xFFE7F2EB),
-        child: Icon(Icons.landscape_outlined, color: agroGreen),
-      ),
-      title: Text(
-        farm.name,
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ),
-      subtitle: const Text('Finca asignada'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'El detalle de finca se conectará al completar sus endpoints.',
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _EmptyFarmsState extends StatelessWidget {
-  const _EmptyFarmsState();
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 65),
+  Widget build(BuildContext context) => AgroCard(
+    onTap: () => pushScreen(context, FarmDetailScreen(farm: farm)),
     child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 82,
-          height: 82,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE7F2EB),
-            borderRadius: BorderRadius.circular(26),
-          ),
-          child: const Icon(
-            Icons.landscape_outlined,
-            color: agroGreen,
-            size: 40,
-          ),
+        Row(
+          children: [
+            const IconBadge(icon: Icons.landscape_outlined),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    farm.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AgroText.headlineMd,
+                  ),
+                  Text(
+                    farm.municipalityCode == null
+                        ? 'Ubicación sin registrar'
+                        : 'Municipio DANE ${farm.municipalityCode}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AgroText.bodySm,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AgroColors.outline),
+          ],
         ),
-        const SizedBox(height: 18),
-        Text(
-          'Registre su primera finca para empezar',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Aquí verá las fincas que tiene asignadas.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: agroMuted),
-        ),
-        const SizedBox(height: 20),
-        if (context.findAncestorStateOfType<_FarmsScreenState>()?._canCreate ??
-            false)
-          FilledButton.icon(
-            onPressed: () => context
-                .findAncestorStateOfType<_FarmsScreenState>()
-                ?._createFarm(),
-            icon: const Icon(Icons.add),
-            label: const Text('Registrar finca'),
-          ),
-      ],
-    ),
-  );
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 60),
-    child: Column(
-      children: [
-        const Icon(Icons.cloud_off_outlined, size: 44, color: agroMuted),
         const SizedBox(height: 12),
-        Text(message, textAlign: TextAlign.center),
-        const SizedBox(height: 16),
-        OutlinedButton(
-          onPressed: onRetry,
-          child: const Text('Intentar de nuevo'),
+        Row(
+          children: [
+            StatusPill(
+              active ? 'Finca activa' : 'Registrada',
+              tone: active ? Tone.ok : Tone.neutral,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AgroColors.surfaceLow,
+            borderRadius: BorderRadius.circular(AgroRadius.md),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: Text('Área total', style: AgroText.bodySm)),
+              const SizedBox(width: 8),
+              AmountText(
+                farm.areaHa == null ? 'Sin registrar' : formatHa(farm.areaHa),
+                color: AgroColors.primary,
+              ),
+            ],
+          ),
         ),
       ],
     ),
+  );
+}
+
+class _FarmForm extends StatefulWidget {
+  const _FarmForm({required this.app});
+
+  final AppController app;
+
+  @override
+  State<_FarmForm> createState() => _FarmFormState();
+}
+
+class _FarmFormState extends State<_FarmForm> {
+  final _name = TextEditingController();
+  final _area = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _area.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FormSheet(
+    title: 'Nueva finca',
+    submitLabel: 'Guardar finca',
+    onSubmit: () => widget.app.farmsRepo.create(
+      name: _name.text.trim(),
+      areaHa: _area.text.trim().isEmpty ? null : parseNumber(_area.text),
+    ),
+    children: [
+      LabeledField(
+        label: 'Nombre de la finca',
+        controller: _name,
+        maxLength: 150,
+        textCapitalization: TextCapitalization.words,
+        validator: requiredText,
+      ),
+      LabeledField(
+        label: 'Área total en hectáreas (opcional)',
+        controller: _area,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      ),
+    ],
   );
 }

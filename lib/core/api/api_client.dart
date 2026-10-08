@@ -5,10 +5,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode});
+  const ApiException(this.message, {this.statusCode, this.code});
 
   final String message;
   final int? statusCode;
+  final String? code;
 
   @override
   String toString() => message;
@@ -34,6 +35,8 @@ class ApiClient {
   final http.Client _client;
   final String _baseUrl;
 
+  void Function()? onUnauthorized;
+
   Future<Map<String, dynamic>> get(
     String path, {
     String? token,
@@ -44,7 +47,6 @@ class ApiClient {
     return _decode(response);
   }
 
-  /// Comprueba que la API responde y que el navegador puede alcanzarla.
   Future<bool> checkConnection() async {
     try {
       await get('health');
@@ -76,6 +78,42 @@ class ApiClient {
         'La respuesta del servidor tiene un formato inesperado.',
       );
     }
+    _throwApiError(response.statusCode, decoded);
+  }
+
+  Future<Object?> getAny(
+    String path, {
+    String? token,
+    Map<String, String>? query,
+  }) async {
+    final response = await _client.get(
+      _uri(path, query),
+      headers: _headers(token),
+    );
+    return _decodeAny(response, token);
+  }
+
+  Future<Object?> send(
+    String method,
+    String path, {
+    Object? body,
+    String? token,
+    String? idempotencyKey,
+  }) async {
+    final headers = _headers(token);
+    if (idempotencyKey != null) headers['Idempotency-Key'] = idempotencyKey;
+    final request = http.Request(method, _uri(path))..headers.addAll(headers);
+    if (body != null) request.body = jsonEncode(body);
+    final response = await http.Response.fromStream(
+      await _client.send(request),
+    );
+    return _decodeAny(response, token);
+  }
+
+  Object? _decodeAny(http.Response response, String? token) {
+    final decoded = _decodeBody(response);
+    if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
+    if (response.statusCode == 401 && token != null) onUnauthorized?.call();
     _throwApiError(response.statusCode, decoded);
   }
 
@@ -141,7 +179,10 @@ class ApiClient {
             _ => 'No se pudo completar la solicitud. Intente de nuevo.',
           };
 
-    throw ApiException(message, statusCode: statusCode);
+    final code = error is Map<String, dynamic> && error['code'] is String
+        ? error['code'] as String
+        : null;
+    throw ApiException(message, statusCode: statusCode, code: code);
   }
 
   void close() => _client.close();
