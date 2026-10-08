@@ -58,15 +58,15 @@ jobs:
         include:
           - destino: android
             sistema: ubuntu-latest
-            comando: flutter build apk --release
+            comando: flutter build apk --release --dart-define=API_BASE_URL=https://agrogestion.proyecto.sbs
             ruta: build/app/outputs/flutter-apk/app-release.apk
           - destino: web
             sistema: ubuntu-latest
-            comando: flutter build web --release
+            comando: flutter build web --release --dart-define=API_BASE_URL=https://agrogestion.proyecto.sbs
             ruta: build/web
           - destino: windows
             sistema: windows-latest
-            comando: flutter build windows --release
+            comando: flutter build windows --release --dart-define=API_BASE_URL=https://agrogestion.proyecto.sbs
             ruta: build/windows/x64/runner/Release
     runs-on: ${{ matrix.sistema }}
     steps:
