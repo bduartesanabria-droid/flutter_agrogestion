@@ -130,12 +130,15 @@ class _SideBar extends StatelessWidget {
               child: const Icon(Icons.spa_rounded, color: agroGreenDark),
             ),
             const SizedBox(width: 11),
-            const Text(
-              'AgroGestion',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+            const Expanded(
+              child: Text(
+                'AgroGestion',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
