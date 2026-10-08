@@ -64,11 +64,11 @@ class TestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        home: AppShell(
-          session: session,
-          authRepository: authRepository,
-          farmRepository: farmRepository,
-          onSignOut: () async {},
-        ),
-      );
+    home: AppShell(
+      session: session,
+      authRepository: authRepository,
+      farmRepository: farmRepository,
+      onSignOut: () async {},
+    ),
+  );
 }

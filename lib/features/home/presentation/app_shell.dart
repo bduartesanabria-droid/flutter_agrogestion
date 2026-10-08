@@ -396,7 +396,7 @@ class _PageFrame extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (action != null) action!,
+                    ?action,
                   ],
                 ),
                 const SizedBox(height: 28),
@@ -865,19 +865,20 @@ class _MoneyPage extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, this.selected = false, this.onTap});
+  const _Pill({required this.label, this.selected = false});
   final String label;
   final bool selected;
-  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
+    onTap: null,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: selected ? agroGreen : Colors.white,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: selected ? agroGreen : const Color(0xFFE1E8E2)),
+        border: Border.all(
+          color: selected ? agroGreen : const Color(0xFFE1E8E2),
+        ),
       ),
       child: Text(
         label,
@@ -1141,11 +1142,9 @@ class _ToolTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.detail,
-    this.onTap,
   });
   final IconData icon;
   final String title, detail;
-  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Card(
     child: ListTile(
@@ -1154,7 +1153,7 @@ class _ToolTile extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
       subtitle: Text(detail),
       trailing: const Icon(Icons.chevron_right),
-      onTap: onTap ?? () {},
+      onTap: () {},
     ),
   );
 }
