@@ -13,6 +13,19 @@ class AuthSession {
   final String name;
   final String role;
 
+  /// Primer nombre para saludos. Usa "Usuario" si el nombre viene vacío.
+  String get firstName {
+    final partes = name.trim().split(RegExp(r'\s+'));
+    return partes.first.isEmpty ? 'Usuario' : partes.first;
+  }
+
+  String get roleLabel => switch (role) {
+    'admin' => 'Administrador',
+    'contador' => 'Contador',
+    'experto' => 'Experto',
+    _ => 'Agricultor',
+  };
+
   factory AuthSession.fromApi({
     required String token,
     required Map<String, dynamic> profile,
