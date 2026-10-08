@@ -396,7 +396,7 @@ class _PageFrame extends StatelessWidget {
                         ],
                       ),
                     ),
-                    ?action,
+                    if (action != null) action!,
                   ],
                 ),
                 const SizedBox(height: 28),
@@ -795,83 +795,97 @@ class _MoneyPage extends StatelessWidget {
       icon: const Icon(Icons.add, size: 18),
       label: const Text('Nuevo movimiento'),
     ),
-    child: ListView(
-      children: [
-        const Wrap(
-          spacing: 12,
-          runSpacing: 12,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = ((constraints.maxWidth - 24) / 3).clamp(160.0, 215.0);
+        return ListView(
+          padding: const EdgeInsets.only(bottom: 32),
           children: [
-            _MoneyMetric(
-              label: 'Saldo disponible',
-              value: '\$1.850.000',
-              color: agroGreen,
-            ),
-            _MoneyMetric(
-              label: 'Ingresos del mes',
-              value: '\$4.250.000',
-              color: Color(0xFF4E83CC),
-            ),
-            _MoneyMetric(
-              label: 'Gastos del mes',
-              value: '\$2.400.000',
-              color: Color(0xFFD47B27),
-            ),
-          ],
-        ),
-        const SizedBox(height: 28),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                _SectionTitle(
-                  title: 'Movimientos recientes',
-                  action: 'Ver todos',
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _MoneyMetric(
+                  label: 'Saldo disponible',
+                  value: '\$1.850.000',
+                  color: agroGreen,
+                  width: cardWidth,
                 ),
-                SizedBox(height: 8),
-                _MoneyRow(
-                  title: 'Jornales de socola',
-                  category: 'Mano de obra · 28 sep',
-                  amount: '-\$2.160.000',
+                _MoneyMetric(
+                  label: 'Ingresos del mes',
+                  value: '\$4.250.000',
+                  color: const Color(0xFF4E83CC),
+                  width: cardWidth,
                 ),
-                _MoneyRow(
-                  title: 'Venta de cosecha',
-                  category: 'Ingreso · 26 sep',
-                  amount: '+\$3.450.000',
-                ),
-                _MoneyRow(
-                  title: 'Fertilizante granulado',
-                  category: 'Insumos · 25 sep',
-                  amount: '-\$240.000',
+                _MoneyMetric(
+                  label: 'Gastos del mes',
+                  value: '\$2.400.000',
+                  color: const Color(0xFFD47B27),
+                  width: cardWidth,
                 ),
               ],
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 28),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionTitle(
+                      title: 'Movimientos recientes',
+                      action: 'Ver todos',
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 8),
+                    const _MoneyRow(
+                      title: 'Jornales de socola',
+                      category: 'Mano de obra · 28 sep',
+                      amount: '-\$2.160.000',
+                    ),
+                    const _MoneyRow(
+                      title: 'Venta de cosecha',
+                      category: 'Ingreso · 26 sep',
+                      amount: '+\$3.450.000',
+                    ),
+                    const _MoneyRow(
+                      title: 'Fertilizante granulado',
+                      category: 'Insumos · 25 sep',
+                      amount: '-\$240.000',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     ),
   );
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, this.selected = false});
+  const _Pill({required this.label, this.selected = false, this.onTap});
   final String label;
   final bool selected;
+  final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-    decoration: BoxDecoration(
-      color: selected ? agroGreen : Colors.white,
-      borderRadius: BorderRadius.circular(30),
-      border: Border.all(color: selected ? agroGreen : const Color(0xFFE1E8E2)),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        color: selected ? Colors.white : agroMuted,
-        fontWeight: FontWeight.w700,
-        fontSize: 12,
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? agroGreen : Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: selected ? agroGreen : const Color(0xFFE1E8E2)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: selected ? Colors.white : agroMuted,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
       ),
     ),
   );
@@ -986,12 +1000,14 @@ class _MoneyMetric extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.width = 215,
   });
   final String label, value;
   final Color color;
+  final double width;
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: 215,
+    width: width,
     child: Card(
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -1125,9 +1141,11 @@ class _ToolTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.detail,
+    this.onTap,
   });
   final IconData icon;
   final String title, detail;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Card(
     child: ListTile(
@@ -1136,6 +1154,7 @@ class _ToolTile extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
       subtitle: Text(detail),
       trailing: const Icon(Icons.chevron_right),
+      onTap: onTap ?? () {},
     ),
   );
 }
