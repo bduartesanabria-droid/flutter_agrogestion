@@ -93,6 +93,49 @@ final _recorridos = <String, Recorrido>{
     await tapText(t, 'Ver política completa');
     expect(find.text('Política de datos'), findsOneWidget);
   },
+  'pagos pendientes': (t) async {
+    await tapText(t, 'Más');
+    await tapText(t, 'Pagos pendientes');
+    expect(find.text('TOTAL ACUMULADO POR LIQUIDAR'), findsOneWidget);
+    await tapText(t, 'Por labor');
+    expect(find.text('PARTIDAS POR LABOR'), findsOneWidget);
+  },
+  'inventario y detalle de insumo': (t) async {
+    await tapText(t, 'Más');
+    await tapText(t, 'Insumos e inventario');
+    expect(find.text('Urea granulada 46%'), findsOneWidget);
+    await tapText(t, 'Urea granulada 46%');
+    expect(find.text('MOVIMIENTOS DE KARDEX'), findsOneWidget);
+  },
+  'formularios de inventario': (t) async {
+    await tapText(t, 'Más');
+    await tapText(t, 'Insumos e inventario');
+    await tapText(t, 'Nuevo insumo');
+    expect(find.text('Guardar insumo'), findsOneWidget);
+    await t.tapAt(const Offset(5, 5));
+    await settle(t);
+    await tapText(t, 'Urea granulada 46%');
+    await tapText(t, 'Registrar entrada');
+    expect(find.text('Guardar entrada'), findsOneWidget);
+    await t.tapAt(const Offset(5, 5));
+    await settle(t);
+    await tapText(t, 'Registrar consumo');
+    expect(find.text('Guardar consumo'), findsOneWidget);
+  },
+  'procesos y detalle': (t) async {
+    await tapText(t, 'Más');
+    await tapText(t, 'Procesos de transformación');
+    expect(find.text('Secado de bijao lote 1'), findsOneWidget);
+    await tapText(t, 'Secado de bijao lote 1');
+    expect(find.text('ETAPAS'), findsOneWidget);
+    expect(find.text('Finalizar etapa'), findsOneWidget);
+  },
+  'formulario de proceso': (t) async {
+    await tapText(t, 'Más');
+    await tapText(t, 'Procesos de transformación');
+    await tapText(t, 'Nuevo proceso');
+    expect(find.text('Guardar proceso'), findsOneWidget);
+  },
   'registro rápido': (t) async {
     await tapText(t, 'Registrar');
     expect(find.text('Registro rápido'), findsOneWidget);

@@ -24,6 +24,11 @@ List<Map<String, String>> _permissions(String role) {
     'resumen': 'x',
   };
   final base = [p('GET', '/auth/me'), p('GET', '/glosario')];
+  final lists = [
+    p('GET', '/fincas/{finca_id}/jornales'),
+    p('GET', '/fincas/{finca_id}/insumos'),
+    p('GET', '/fincas/{finca_id}/procesos'),
+  ];
   return switch (role) {
     'admin' => [
       ...base,
@@ -33,6 +38,7 @@ List<Map<String, String>> _permissions(String role) {
       p('GET', '/eventos-adversos'),
       p('GET', '/consultas'),
       p('POST', '/usuarios'),
+      ...lists,
     ],
     'agricultor' => [
       ...base,
@@ -41,8 +47,9 @@ List<Map<String, String>> _permissions(String role) {
       p('GET', '/cultivos'),
       p('GET', '/eventos-adversos'),
       p('GET', '/consultas'),
+      ...lists,
     ],
-    'contador' => [...base, p('GET', '/siembras')],
+    'contador' => [...base, p('GET', '/siembras'), ...lists],
     _ => base,
   };
 }
@@ -81,6 +88,66 @@ Map<String, dynamic> plantingDetail() => {
       'motivo_perdida': null,
     },
   ],
+};
+
+Map<String, dynamic> _jornal(
+  String id,
+  String? worker,
+  String activity,
+  num workers,
+  num days,
+  num value, {
+  bool paid = false,
+}) => {
+  'id': id,
+  'trabajador_id': worker == null ? null : 'w-$id',
+  'trabajador_nombre': worker,
+  'actividad_id': 'act-1',
+  'actividad_nombre': activity,
+  'ciclo_id': cycleId,
+  'fecha': '2026-10-05T08:00:00',
+  'obreros': '$workers',
+  'dias': '$days',
+  'valor_jornal': '$value',
+  'modalidad': 'jornal',
+  'total': '${workers * days * value}',
+  'estado': paid ? 'pagado' : 'pendiente',
+  'pagado_en': paid ? '2026-10-06T08:00:00' : null,
+};
+
+Map<String, dynamic> _proceso(
+  String id,
+  String name,
+  int stages,
+  int done,
+  String? end,
+) => {
+  'id': id,
+  'nombre': name,
+  'producto': 'Producto seco',
+  'materia_prima': 'Hoja de bijao',
+  'origen_materia': 'propia',
+  'fecha_inicio': '2026-09-28T08:00:00',
+  'fecha_fin': end,
+  'etapas': stages,
+  'etapas_finalizadas': done,
+  'estado': end == null ? 'en_proceso' : 'terminado',
+};
+
+Map<String, dynamic> _etapa(
+  String id,
+  String name,
+  num days,
+  String? start,
+  String? end,
+) => {
+  'id': id,
+  'proceso_id': 'p1',
+  'finca_id': farmId,
+  'nombre': name,
+  'dias_estimados': '$days',
+  'iniciado_en': start,
+  'finalizado_en': end,
 };
 
 List<Map<String, dynamic>> _phases() => [
@@ -169,6 +236,11 @@ class FakeBackend {
       return _json({
         'error': {'code': 'NO_AUTENTICADO', 'message': 'Debe autenticarse.'},
       }, 401);
+    }
+    if (method == 'POST' &&
+        path.startsWith('fincas/$farmId/jornales/') &&
+        path.endsWith('/pagar')) {
+      return _json({});
     }
     switch (path) {
       case 'auth/me':
@@ -359,8 +431,6 @@ class FakeBackend {
             'estado': 'en_curso',
           },
         ]);
-      case 'fincas/$farmId/jornales':
-        return _json({}, 201);
       case 'fincas/$farmId/cosechas':
         return _json({}, 201);
       case 'cultivos':
@@ -528,6 +598,122 @@ class FakeBackend {
             'estado': 'activo',
           },
         ]);
+      case 'fincas/$farmId/jornales':
+        if (method == 'POST') return _json({}, 201);
+        final status = request.url.queryParameters['estado'];
+        final all = [
+          _jornal(
+            'j1',
+            'Pedro Nel Builes',
+            'Socola y limpia Lote 2',
+            2,
+            3,
+            90000,
+          ),
+          _jornal('j2', null, 'Ahoyado y siembra', 4, 2, 60000),
+          _jornal(
+            'j3',
+            'Juan Camilo Henao Zuluaga de los Ríos',
+            'Plateo y abono del Lote 4B',
+            1,
+            6,
+            90000,
+          ),
+          _jornal(
+            'j4',
+            'Rosa Helena Gómez',
+            'Desyerbe',
+            1,
+            4,
+            80000,
+            paid: true,
+          ),
+        ];
+        return _json(
+          status == null
+              ? all
+              : all.where((j) => j['estado'] == status).toList(),
+        );
+      case 'fincas/$farmId/insumos':
+        if (method == 'POST') return _json({}, 201);
+        return _json([
+          {
+            'id': 'in1',
+            'nombre': 'Urea granulada 46%',
+            'unidad': 'bulto',
+            'existencia': '12.00',
+            'costo_promedio': '185000.00',
+            'valor': '2220000.00',
+            'ultimo_movimiento': '2026-10-08T10:00:00',
+            'estado': 'activo',
+          },
+          {
+            'id': 'in2',
+            'nombre': 'Machete Collins 22 pulgadas para desmonte manual',
+            'unidad': 'unidad',
+            'existencia': '0.00',
+            'costo_promedio': null,
+            'valor': '0.00',
+            'ultimo_movimiento': null,
+            'estado': 'activo',
+          },
+        ]);
+      case 'fincas/$farmId/insumos/entrada':
+      case 'fincas/$farmId/insumos/consumo':
+        return _json({}, 200);
+      case 'fincas/$farmId/movimientos-insumo':
+        return _json([
+          {
+            'id': 'm1',
+            'finca_id': farmId,
+            'insumo_id': 'in1',
+            'actividad_id': null,
+            'tipo': 'entrada',
+            'cantidad': '14.00',
+            'costo': '2590000.00',
+            'fecha': '2026-10-01T10:00:00',
+            'creado_por': 'u',
+          },
+          {
+            'id': 'm2',
+            'finca_id': farmId,
+            'insumo_id': 'in1',
+            'actividad_id': 'act-1',
+            'tipo': 'consumo',
+            'cantidad': '2.00',
+            'costo': '0.00',
+            'fecha': '2026-10-05T10:00:00',
+            'creado_por': 'u',
+          },
+        ]);
+      case 'fincas/$farmId/procesos':
+        if (method == 'POST') return _json({}, 201);
+        return _json([
+          _proceso('p1', 'Secado de bijao lote 1', 3, 1, null),
+          _proceso(
+            'p2',
+            'Beneficio de café pergamino',
+            2,
+            2,
+            '2026-09-20T10:00:00',
+          ),
+        ]);
+      case 'fincas/$farmId/procesos/p1/etapas':
+        if (method == 'POST') return _json({}, 201);
+        return _json([
+          _etapa(
+            'e1',
+            'Cocinar',
+            1,
+            '2026-10-01T08:00:00',
+            '2026-10-01T18:00:00',
+          ),
+          _etapa('e2', 'Secar al sol', 5, '2026-10-02T08:00:00', null),
+          _etapa('e3', 'Recoger y empacar', 1, null, null),
+        ]);
+      case 'fincas/$farmId/etapas/e2/finalizar':
+      case 'fincas/$farmId/etapas/e3/iniciar':
+        return _json({});
       case 'glosario':
         return _json([
           {

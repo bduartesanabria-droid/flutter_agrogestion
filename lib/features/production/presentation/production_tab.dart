@@ -11,6 +11,7 @@ import '../../farms/domain/farm.dart';
 import '../../home/presentation/farm_selector.dart';
 import '../data/production_repository.dart';
 import '../domain/production.dart';
+import '../../processes/presentation/processes_screen.dart';
 import 'crops_screen.dart';
 import 'labels.dart';
 import 'planting_detail_screen.dart';
@@ -83,6 +84,12 @@ class _ProductionTabState extends State<ProductionTab> {
             Row(
               children: [
                 Expanded(child: Text('Producción', style: AgroText.headlineMd)),
+                if (access.seesProcesses)
+                  TextLinkButton(
+                    'Procesos',
+                    () => pushScreen(context, const ProcessesScreen()),
+                    icon: Icons.precision_manufacturing_outlined,
+                  ),
                 if (access.managesCatalog)
                   TextLinkButton(
                     'Catálogo',

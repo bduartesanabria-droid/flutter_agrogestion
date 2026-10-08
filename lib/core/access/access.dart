@@ -30,7 +30,9 @@ class Access {
   bool get seesWorkers => isAdmin || isFarmer || isAccountant;
   bool get managesWorkers => isAdmin || isFarmer;
   bool get managesInventory => isAdmin || isFarmer;
-  bool get seesInventory => isAdmin || isFarmer || isAccountant;
+  bool get seesInventory => _has('GET', '/fincas/{finca_id}/insumos');
+  bool get seesPayments => _has('GET', '/fincas/{finca_id}/jornales');
+  bool get seesProcesses => _has('GET', '/fincas/{finca_id}/procesos');
   bool get createsFarms => isAdmin || isFarmer;
   bool get seesReports => !isExpert;
   bool get managesUsers => _has('POST', '/usuarios');

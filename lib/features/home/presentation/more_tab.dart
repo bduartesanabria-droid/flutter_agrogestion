@@ -11,6 +11,9 @@ import '../../content/presentation/glossary_screen.dart';
 import '../../content/presentation/knowledge_screen.dart';
 import '../../content/presentation/news_screen.dart';
 import '../../farms/presentation/farms_screen.dart';
+import '../../inventory/presentation/inventory_screen.dart';
+import '../../payments/presentation/payments_screen.dart';
+import '../../processes/presentation/processes_screen.dart';
 import '../../production/presentation/crops_screen.dart';
 import '../../risks/presentation/events_screen.dart';
 import '../../workers/presentation/workers_screen.dart';
@@ -56,6 +59,27 @@ class MoreTab extends StatelessWidget {
           'Perfiles que gobiernan el ciclo',
           Icons.eco_outlined,
           const CropsScreen(),
+        ),
+      if (access.seesPayments)
+        row(
+          'Pagos pendientes',
+          'Jornales por liquidar',
+          Icons.payments_outlined,
+          const PaymentsScreen(),
+        ),
+      if (access.seesInventory)
+        row(
+          'Insumos e inventario',
+          'Existencias, compras y consumos',
+          Icons.inventory_2_outlined,
+          const InventoryScreen(),
+        ),
+      if (access.seesProcesses)
+        row(
+          'Procesos de transformación',
+          'Secado, beneficio y etapas',
+          Icons.precision_manufacturing_outlined,
+          const ProcessesScreen(),
         ),
       if (access.seesRisks)
         row(

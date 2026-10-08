@@ -9,6 +9,7 @@ import '../../../core/widgets/layout.dart';
 import '../../../core/widgets/states.dart';
 import '../../home/presentation/farm_selector.dart';
 import '../data/money_repository.dart';
+import '../../payments/presentation/payments_screen.dart';
 import 'movement_detail_screen.dart';
 import 'movements_screen.dart';
 
@@ -199,6 +200,42 @@ class _MoneyTabState extends State<MoneyTab> {
                 ],
               ),
             ),
+            if (access.seesPayments) ...[
+              const Gap(16),
+              AgroCard(
+                accent: AgroColors.tertiary,
+                padding: const EdgeInsets.fromLTRB(21, 12, 8, 12),
+                onTap: () => pushScreen(context, const PaymentsScreen()),
+                child: Row(
+                  children: [
+                    const IconBadge(
+                      icon: Icons.payments_outlined,
+                      background: AgroColors.tertiaryFixed,
+                      foreground: AgroColors.tertiary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Pagos pendientes', style: AgroText.labelMd),
+                          Text(
+                            'Jornales por liquidar a trabajadores y cuadrillas',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AgroText.bodySm,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AgroColors.outline,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SectionTitle('Distribución del gasto'),
             AgroCard(
               child: categories.isEmpty

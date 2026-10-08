@@ -9,7 +9,10 @@ import '../features/content/data/content_repository.dart';
 import '../features/farms/data/farm_repository.dart';
 import '../features/farms/domain/farm.dart';
 import '../features/home/data/home_repository.dart';
+import '../features/inventory/data/inventory_repository.dart';
 import '../features/money/data/money_repository.dart';
+import '../features/payments/data/payments_repository.dart';
+import '../features/processes/data/processes_repository.dart';
 import '../features/production/data/production_repository.dart';
 import '../features/production/domain/production.dart';
 import '../features/risks/data/risks_repository.dart';
@@ -30,6 +33,9 @@ class AppController extends ChangeNotifier {
     home = HomeRepository(backend);
     content = ContentRepository(backend);
     account = AccountRepository(backend);
+    payments = PaymentsRepository(backend);
+    inventory = InventoryRepository(backend);
+    processes = ProcessesRepository(backend);
   }
 
   final AuthSession session;
@@ -45,6 +51,9 @@ class AppController extends ChangeNotifier {
   late final HomeRepository home;
   late final ContentRepository content;
   late final AccountRepository account;
+  late final PaymentsRepository payments;
+  late final InventoryRepository inventory;
+  late final ProcessesRepository processes;
 
   List<Farm> farms = const [];
   Farm? activeFarm;

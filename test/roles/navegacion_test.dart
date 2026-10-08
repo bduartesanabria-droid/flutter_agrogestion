@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/harness.dart';
 
 void main() {
+  pagosPorRol();
   for (final role in ['admin', 'agricultor']) {
     testWidgets('$role ve cuatro pestañas y el registro rápido', (
       tester,
@@ -95,5 +96,49 @@ void main() {
     expect(find.text('Cancelar siembra'), findsNothing);
     expect(find.text('Registrar conteo de plantas'), findsNothing);
     expectNoErrors(tester);
+  });
+}
+
+void pagosPorRol() {
+  testWidgets('el contador y el administrador marcan jornales como pagados', (
+    tester,
+  ) async {
+    for (final role in ['contador', 'admin']) {
+      final backend = await pumpApp(tester, role: role);
+      await tapText(tester, 'Más');
+      await tapText(tester, 'Pagos pendientes');
+      expect(find.text('Seleccionar todos'), findsOneWidget, reason: role);
+      await tapText(tester, 'Seleccionar todos');
+      await tapText(tester, 'Marcar como pagado', last: true);
+      await tapText(tester, 'Marcar como pagado', last: true);
+      expect(
+        backend.calls.where((c) => c.endsWith('/pagar')).length,
+        3,
+        reason: role,
+      );
+      expectNoErrors(tester);
+    }
+  });
+
+  testWidgets('el agricultor ve los pagos pero no los marca', (tester) async {
+    await pumpApp(tester, role: 'agricultor');
+    await tapText(tester, 'Más');
+    await tapText(tester, 'Pagos pendientes');
+    expect(find.text('TOTAL ACUMULADO POR LIQUIDAR'), findsOneWidget);
+    expect(find.text('Seleccionar todos'), findsNothing);
+    expect(find.text('Marcar como pagado'), findsNothing);
+    expectNoErrors(tester);
+  });
+
+  testWidgets('el experto no ve pagos, inventario ni procesos', (tester) async {
+    await pumpApp(tester, role: 'experto');
+    await tapText(tester, 'Más');
+    for (final item in [
+      'Pagos pendientes',
+      'Insumos e inventario',
+      'Procesos de transformación',
+    ]) {
+      expect(find.text(item), findsNothing, reason: item);
+    }
   });
 }

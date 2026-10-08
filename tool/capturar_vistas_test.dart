@@ -134,4 +134,25 @@ void main() {
     await _shot(tester, 'extra-08-cuenta');
     expect(_problems, isEmpty);
   });
+
+  testWidgets('capturas pagos, inventario y procesos', (tester) async {
+    await _open(tester, 'admin', const Size(390, 1500));
+    await tapText(tester, 'Más');
+    await tapText(tester, 'Pagos pendientes');
+    await _shot(tester, 'nuevo-01-pagos');
+    await tapText(tester, 'Por labor');
+    await _shot(tester, 'nuevo-02-pagos-labor');
+    await goBack(tester);
+    await tapText(tester, 'Insumos e inventario');
+    await _shot(tester, 'nuevo-03-inventario');
+    await tapText(tester, 'Urea granulada 46%');
+    await _shot(tester, 'nuevo-04-insumo');
+    await goBack(tester);
+    await goBack(tester);
+    await tapText(tester, 'Procesos de transformación');
+    await _shot(tester, 'nuevo-05-procesos');
+    await tapText(tester, 'Secado de bijao lote 1');
+    await _shot(tester, 'nuevo-06-proceso');
+    expect(_problems, isEmpty);
+  });
 }
