@@ -50,9 +50,25 @@ jobs:
       - run: flutter pub get
       - run: flutter test test/vistas
 
-  construccion:
-    runs-on: ubuntu-latest
+  paquetes:
     needs: [calidad, modulos, roles, vistas]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - destino: android
+            sistema: ubuntu-latest
+            comando: flutter build apk --release
+            ruta: build/app/outputs/flutter-apk/app-release.apk
+          - destino: web
+            sistema: ubuntu-latest
+            comando: flutter build web --release
+            ruta: build/web
+          - destino: windows
+            sistema: windows-latest
+            comando: flutter build windows --release
+            ruta: build/windows/x64/runner/Release
+    runs-on: ${{ matrix.sistema }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -60,5 +76,8 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter build web --release
-      - run: flutter build apk --debug
+      - run: ${{ matrix.comando }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agrogestion-${{ matrix.destino }}
+          path: ${{ matrix.ruta }}
