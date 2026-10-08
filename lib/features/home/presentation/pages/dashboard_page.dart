@@ -106,19 +106,14 @@ class DashboardPage extends StatelessWidget {
         _AlertaBanner(onTap: () => _mostrarAlerta(context)),
         const SizedBox(height: 22),
         SectionTitle(
-          title: 'Resumen',
+          title: 'Resumen de hoy',
           actionLabel: 'Ver dinero',
           onAction: onOpenMoney,
         ),
         const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: columnas,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: columnas == 4 ? 1.6 : 1.3,
-          children: [
+        _MetricasGrid(
+          columnas: columnas,
+          tarjetas: [
             const MetricCard(
               label: 'Fincas activas',
               value: '3',
@@ -194,6 +189,32 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Cuadrícula responsiva sin altura fija: cada tarjeta conserva la altura de su
+/// contenido, así el texto nunca desborda y la vista completa sigue siendo scrollable.
+class _MetricasGrid extends StatelessWidget {
+  const _MetricasGrid({required this.columnas, required this.tarjetas});
+
+  final int columnas;
+  final List<Widget> tarjetas;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      const espacio = 12.0;
+      final ancho =
+          (constraints.maxWidth - espacio * (columnas - 1)) / columnas;
+      return Wrap(
+        spacing: espacio,
+        runSpacing: espacio,
+        children: [
+          for (final tarjeta in tarjetas)
+            SizedBox(width: ancho, child: tarjeta),
+        ],
+      );
+    },
+  );
 }
 
 class _AlertaBanner extends StatelessWidget {
