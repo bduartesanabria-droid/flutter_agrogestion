@@ -33,17 +33,19 @@ async function leerTarjetas(raiz) {
     await pagina.goto(url, { waitUntil: "networkidle0" });
     const datos = await pagina.evaluate(() =>
       Object.fromEntries(
-        [...document.querySelectorAll("[data-plataforma]")].map((t) => [
-          t.dataset.plataforma,
-          {
-            meta: t.querySelector("[data-meta]").textContent,
-            estado: t.querySelector("[data-estado]").textContent,
-            habilitado: t.querySelector("[data-boton]").getAttribute("aria-disabled") === "false",
-            href: t.querySelector("[data-boton]").getAttribute("href"),
-            hashVisible: !t.querySelector("[data-hash]").hidden,
-            hash: t.querySelector("[data-hash-valor]").textContent,
-          },
-        ]),
+        [...document.querySelectorAll("[data-plataforma]")].map((t) => {
+          const boton = t.querySelector("[data-boton]");
+          return [
+            t.dataset.plataforma,
+            {
+              texto: boton.textContent,
+              habilitado: boton.getAttribute("aria-disabled") === "false",
+              href: boton.getAttribute("href"),
+              ayuda: boton.title,
+              textoVisible: t.innerText.replace(boton.textContent, "").trim(),
+            },
+          ];
+        }),
       ),
     );
     await pagina.close();
@@ -51,24 +53,29 @@ async function leerTarjetas(raiz) {
   });
 }
 
-test("con los dos archivos muestra version, tamano, fecha y huella", async () => {
+test("con los dos archivos cada tarjeta es un icono y un boton que descarga", async () => {
   const datos = await leerTarjetas(sitio());
-  assert.equal(datos.android.meta, "Versión 1.4.0 · 3.0 MB · 2026-10-09");
-  assert.equal(datos.windows.meta, "Versión 1.4.0 · 5.0 MB · 2026-10-09");
+  assert.equal(datos.android.texto, "Descargar APK");
+  assert.equal(datos.windows.texto, "Descargar x64");
   assert.equal(datos.android.habilitado, true);
   assert.equal(datos.android.href, "descargas/AgroGestion.apk");
   assert.equal(datos.windows.href, "descargas/AgroGestion_windows.zip");
-  assert.match(datos.android.hash, /^[0-9a-f]{64}$/);
-  assert.equal(datos.windows.hashVisible, true);
+  assert.equal(datos.android.ayuda, "Versión 1.4.0 · 3.0 MB");
+  assert.equal(datos.windows.ayuda, "Versión 1.4.0 · 5.0 MB");
 });
 
-test("sin version.json no hay botones ni cifras inventadas", async () => {
+test("la tarjeta no muestra nada mas que el icono y el boton", async () => {
+  const datos = await leerTarjetas(sitio());
+  for (const plataforma of ["android", "windows"]) {
+    assert.equal(datos[plataforma].textoVisible, "", `texto extra en ${plataforma}`);
+  }
+});
+
+test("sin version.json el boton avisa que no esta disponible y no descarga", async () => {
   const datos = await leerTarjetas(sitio({ version: false }));
   for (const plataforma of ["android", "windows"]) {
-    assert.equal(datos[plataforma].meta, "Descarga no disponible por ahora");
+    assert.equal(datos[plataforma].texto, "No disponible por ahora");
     assert.equal(datos[plataforma].habilitado, false);
-    assert.equal(datos[plataforma].hashVisible, false);
-    assert.ok(datos[plataforma].estado.length > 0);
   }
 });
 
@@ -76,7 +83,7 @@ test("si solo existe el APK, Windows queda como no disponible", async () => {
   const datos = await leerTarjetas(sitio({ windows: false }));
   assert.equal(datos.android.habilitado, true);
   assert.equal(datos.windows.habilitado, false);
-  assert.equal(datos.windows.meta, "Descarga no disponible por ahora");
+  assert.equal(datos.windows.texto, "No disponible por ahora");
 });
 
 test("el archivo anunciado se descarga completo y con el tipo correcto", async () => {
@@ -88,25 +95,6 @@ test("el archivo anunciado se descarga completo y con el tipo correcto", async (
     assert.equal((await apk.arrayBuffer()).byteLength, 3 * 1024 * 1024);
     const zip = await fetch(`${url}/descargas/AgroGestion_windows.zip`);
     assert.equal(zip.headers.get("content-type"), "application/zip");
-  });
-});
-
-test("copiar la huella usa el portapapeles", async () => {
-  await conServidor(sitio(), async (url) => {
-    const pagina = await navegador.newPage();
-    await pagina.evaluateOnNewDocument(() => {
-      window.__copiado = null;
-      Object.defineProperty(navigator, "clipboard", {
-        value: { writeText: async (texto) => (window.__copiado = texto) },
-      });
-    });
-    await pagina.goto(url, { waitUntil: "networkidle0" });
-    await pagina.click('[data-plataforma="android"] [data-copiar]');
-    const copiado = await pagina.evaluate(() => window.__copiado);
-    const boton = await pagina.$eval('[data-plataforma="android"] [data-copiar]', (b) => b.textContent);
-    await pagina.close();
-    assert.match(copiado, /^[0-9a-f]{64}$/);
-    assert.equal(boton, "Copiado");
   });
 });
 
