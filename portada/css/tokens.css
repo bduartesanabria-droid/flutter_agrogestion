@@ -1,0 +1,51 @@
+:root {
+  color-scheme: light;
+
+  --surface: #f0fdf2;
+  --surface-low: #e9fbef;
+  --surface-lowest: #ffffff;
+  --hero-from: #d6f8e2;
+  --hero-to: #ffffff;
+
+  --ink: #0b3d2c;
+  --text: #131e18;
+  --text-soft: #3f4943;
+  --outline: #6f7a73;
+  --line: #cfe6d6;
+
+  --brand: #007a52;
+  --brand-hover: #00704a;
+  --brand-bright: #12a06a;
+  --on-brand: #ffffff;
+  --brand-soft: #b0edd0;
+  --brand-softer: #d9f7e6;
+
+  --amber-soft: #fff1dd;
+  --amber-ink: #7a3e00;
+  --amber-bright: #f59e0b;
+
+  --font-main: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  --shadow-1: 0 2px 8px -2px rgba(23, 34, 28, 0.08);
+  --shadow-2: 0 8px 20px -4px rgba(23, 107, 77, 0.14);
+  --shadow-3: 0 24px 48px -8px rgba(16, 78, 57, 0.28);
+
+  --max-width: 1120px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
