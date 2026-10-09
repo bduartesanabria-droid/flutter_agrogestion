@@ -1,4 +1,6 @@
-FROM debian:bookworm-slim AS build
+ARG REGISTRO=docker.io/library
+
+FROM ${REGISTRO}/debian:bookworm-slim AS build
 
 WORKDIR /app
 
@@ -21,7 +23,7 @@ ARG API_BASE_URL
 RUN test -n "$API_BASE_URL" || (echo "API_BASE_URL must be set to the public API URL." >&2 && exit 1) \
     && flutter build web --release --base-href /app/ --dart-define="API_BASE_URL=${API_BASE_URL}"
 
-FROM alpine:3.20 AS descargas
+FROM ${REGISTRO}/alpine:3.20 AS descargas
 
 RUN apk add --no-cache curl jq
 
@@ -38,7 +40,7 @@ RUN echo "commit ${SOURCE_COMMIT}" \
        done; \
     ls -la /d
 
-FROM nginx:stable-alpine
+FROM ${REGISTRO}/nginx:stable-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY portada/index.html portada/privacidad.html portada/llms.txt portada/robots.txt portada/sitemap.xml /usr/share/nginx/html/
