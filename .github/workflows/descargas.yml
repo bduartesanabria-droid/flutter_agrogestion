@@ -78,4 +78,5 @@ jobs:
             --latest
       - name: Avisar a Coolify para que reconstruya la web
         if: env.COOLIFY_WEBHOOK != ''
-        run: curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK"
+        run: |
+          curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK"
