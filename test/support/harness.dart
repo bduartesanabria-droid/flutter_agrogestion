@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_api.dart';
 
@@ -27,6 +28,7 @@ Future<FakeBackend> pumpApp(
   double textScale = 1,
 }) async {
   await tester.pumpWidget(const SizedBox());
+  SharedPreferences.setMockInitialValues({});
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   FlutterSecureStorage.setMockInitialValues({

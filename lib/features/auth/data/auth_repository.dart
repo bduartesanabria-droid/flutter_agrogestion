@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_initializing_formals
 
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../core/api/api_client.dart';
@@ -13,6 +15,7 @@ class AuthRepository {
        _storage = storage;
 
   static const _tokenKey = 'agrogestion_access_token';
+  static const _profileKey = 'agrogestion_profile';
 
   final ApiClient _api;
   final FlutterSecureStorage _storage;
@@ -33,6 +36,7 @@ class AuthRepository {
     final profile = await _api.get('auth/me', token: token);
     final session = AuthSession.fromApi(token: token, profile: profile);
     await _storage.write(key: _tokenKey, value: token);
+    await _storage.write(key: _profileKey, value: jsonEncode(profile));
     return session;
   }
 
@@ -42,12 +46,25 @@ class AuthRepository {
 
     try {
       final profile = await _api.get('auth/me', token: token);
+      await _storage.write(key: _profileKey, value: jsonEncode(profile));
       return AuthSession.fromApi(token: token, profile: profile);
     } on ApiException {
-      await _storage.delete(key: _tokenKey);
+      await _clear();
       return null;
+    } catch (_) {
+      final saved = await _storage.read(key: _profileKey);
+      if (saved == null) return null;
+      return AuthSession.fromApi(
+        token: token,
+        profile: jsonDecode(saved) as Map<String, dynamic>,
+      );
     }
   }
 
-  Future<void> signOut() => _storage.delete(key: _tokenKey);
+  Future<void> signOut() => _clear();
+
+  Future<void> _clear() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _profileKey);
+  }
 }

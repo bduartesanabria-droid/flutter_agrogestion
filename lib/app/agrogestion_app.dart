@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/api/api_client.dart';
 import '../core/theme/app_theme.dart';
+import '../core/api/offline_cache.dart';
 import '../features/account/presentation/consent_screen.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/auth/domain/auth_session.dart';
@@ -73,6 +74,7 @@ class _AgroGestionAppState extends State<AgroGestionApp> {
   Future<void> _onSignOut() async {
     if (_controller == null) return;
     await widget.authRepository.signOut();
+    await OfflineCache.clearAll();
     if (mounted) {
       setState(() {
         _controller = null;

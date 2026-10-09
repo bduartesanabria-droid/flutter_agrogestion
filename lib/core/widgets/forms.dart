@@ -162,7 +162,7 @@ class _FormSheetState extends State<FormSheet> {
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error = 'No hay conexión con el servidor. Intente de nuevo.',
+          () => _error = 'Sin conexión. Este registro necesita internet; intente con señal.',
         );
       }
     } finally {

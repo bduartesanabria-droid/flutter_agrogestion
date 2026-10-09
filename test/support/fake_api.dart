@@ -183,6 +183,7 @@ class FakeBackend {
   });
 
   bool consentAccepted;
+  bool offline = false;
   List<Map<String, dynamic>>? farms;
   final Set<String> failPaths;
   final List<String> calls = [];
@@ -203,6 +204,7 @@ class FakeBackend {
     final path = request.url.path.replaceFirst(RegExp(r'^/'), '');
     final method = request.method;
     calls.add('$method $path');
+    if (offline) throw http.ClientException('sin red');
     if (failPaths.contains(path)) {
       return _json({
         'error': {'code': 'ERROR', 'message': 'Fallo de prueba.'},

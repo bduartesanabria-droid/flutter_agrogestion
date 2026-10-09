@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/access/access.dart';
 import '../core/api/api_client.dart';
 import '../core/api/backend.dart';
+import '../core/api/offline_cache.dart';
 import '../features/account/data/account_repository.dart';
 import '../features/auth/domain/auth_session.dart';
 import '../features/content/data/content_repository.dart';
@@ -24,7 +25,11 @@ class AppController extends ChangeNotifier {
     required ApiClient api,
     required this.onSignOut,
   }) : access = Access(session),
-       backend = Backend(api, session.token) {
+       backend = Backend(
+         api,
+         session.token,
+         cache: OfflineCache(session.userId),
+       ) {
     farmsRepo = FarmRepository(backend);
     production = ProductionRepository(backend);
     money = MoneyRepository(backend);

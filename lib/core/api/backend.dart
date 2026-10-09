@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import 'api_client.dart';
+import 'offline_cache.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -23,19 +27,42 @@ String newIdempotencyKey() {
 }
 
 class Backend {
-  const Backend(this.api, this.token);
+  Backend(this.api, this.token, {this.cache});
 
   final ApiClient api;
   final String token;
+  final OfflineCache? cache;
+  final ValueNotifier<bool> offline = ValueNotifier(false);
+
+  Future<Object?> _read(String path, Map<String, String>? query) async {
+    final sorted = (query ?? const <String, String>{}).entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final id = [path, for (final e in sorted) '${e.key}=${e.value}'].join('|');
+    try {
+      final data = await api
+          .getAny(path, token: token, query: query)
+          .timeout(const Duration(seconds: 20));
+      offline.value = false;
+      unawaited(cache?.save(id, data));
+      return data;
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      final saved = await cache?.read(id);
+      if (saved == null) rethrow;
+      offline.value = true;
+      return saved;
+    }
+  }
 
   Future<Json> getJson(String path, {Map<String, String>? query}) async {
-    final data = await api.getAny(path, token: token, query: query);
+    final data = await _read(path, query);
     if (data is Json) return data;
     throw const ApiException('La respuesta del servidor no se pudo leer.');
   }
 
   Future<List<Json>> getList(String path, {Map<String, String>? query}) async {
-    final data = await api.getAny(path, token: token, query: query);
+    final data = await _read(path, query);
     if (data is List) return data.whereType<Json>().toList();
     if (data is Json && data['items'] is List) {
       return (data['items'] as List).whereType<Json>().toList();
@@ -44,7 +71,7 @@ class Backend {
   }
 
   Future<Paged> getPage(String path, {Map<String, String>? query}) async {
-    final data = await api.getAny(path, token: token, query: query);
+    final data = await _read(path, query);
     if (data is Json && data['items'] is List) {
       final items = (data['items'] as List).whereType<Json>().toList();
       return Paged(
