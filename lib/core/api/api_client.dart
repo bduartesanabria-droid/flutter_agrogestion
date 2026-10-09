@@ -1,8 +1,11 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+
+/// Backend de producción. Es el valor por defecto en todas las plataformas
+/// (web, Android y iOS). Para apuntar a otro servidor, use:
+/// `--dart-define=API_BASE_URL=http://10.0.2.2:8000`
+const String kApiBaseUrlProduccion = 'https://bckagestion.proyecto.sbs';
 
 class ApiException implements Exception {
   const ApiException(this.message, {this.statusCode});
@@ -24,11 +27,7 @@ class ApiClient {
 
   static String _resolveBaseUrl() {
     const fromEnv = String.fromEnvironment('API_BASE_URL');
-    if (fromEnv.isNotEmpty) return fromEnv;
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-    return 'https://bckagestion.proyecto.sbs';
+    return fromEnv.isNotEmpty ? fromEnv : kApiBaseUrlProduccion;
   }
 
   final http.Client _client;
