@@ -28,14 +28,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Ver si la última versión ya trae la web compilada
+        id: web
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api repos/${{ github.repository }}/releases/latest --jq '.assets[].name' | grep -qx AgroGestion_web.zip; then
+            echo "listo=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Aún no hay una versión con AgroGestion_web.zip; se omite la prueba de la imagen."
+            echo "listo=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Construir la imagen
+        if: steps.web.outputs.listo == 'true'
         run: |
           docker build \
             --build-arg REGISTRO=mirror.gcr.io/library \
-            --build-arg API_BASE_URL="${{ vars.API_BASE_URL || 'https://bckagestion.proyecto.sbs' }}" \
             --build-arg SOURCE_COMMIT="${{ github.sha }}" \
             -t agrogestion-web .
       - name: Levantar y comprobar rutas
+        if: steps.web.outputs.listo == 'true'
         run: |
           docker run -d --name web -p 8080:80 agrogestion-web
           sleep 3
@@ -50,6 +62,7 @@ jobs:
           curl -fsSI http://localhost:8080/ | grep -qi "x-content-type-options: nosniff"
           curl -fsSI http://localhost:8080/ | grep -qi "x-frame-options: DENY"
       - name: Comprobar las descargas si ya hay una versión publicada
+        if: steps.web.outputs.listo == 'true'
         run: |
           codigo=$(curl -s -o /tmp/version.json -w '%{http_code}' http://localhost:8080/descargas/version.json)
           if [ "$codigo" = "200" ]; then

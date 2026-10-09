@@ -1,39 +1,21 @@
 ARG REGISTRO=docker.io/library
 
-FROM ${REGISTRO}/debian:bookworm-slim AS build
+FROM ${REGISTRO}/alpine:3.20 AS publicado
 
-WORKDIR /app
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils zip libglu1-mesa \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV FLUTTER_HOME=/opt/flutter
-ENV PATH="${FLUTTER_HOME}/bin:${PATH}"
-
-RUN git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "${FLUTTER_HOME}" \
-    && flutter precache --web
-
-COPY pubspec.yaml pubspec.lock ./
-RUN flutter pub get
-
-COPY . .
-
-ARG API_BASE_URL
-RUN test -n "$API_BASE_URL" || (echo "API_BASE_URL must be set to the public API URL." >&2 && exit 1) \
-    && flutter build web --release --base-href /app/ --dart-define="API_BASE_URL=${API_BASE_URL}"
-
-FROM ${REGISTRO}/alpine:3.20 AS descargas
-
-RUN apk add --no-cache curl jq
+RUN apk add --no-cache curl jq unzip
 
 ARG REPO=bduartesanabria-droid/flutter_agrogestion
 ARG SOURCE_COMMIT=sin-commit
 
-# Baja la ultima version publicada; si falta alguno de los tres archivos no publica ninguno
+# El CI deja compiladas la web y las descargas en la ultima version publicada
 RUN echo "commit ${SOURCE_COMMIT}" \
-    && mkdir /d \
-    && (curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" -o /tmp/release.json || echo '{}' > /tmp/release.json) \
+    && mkdir /app /d \
+    && curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" -o /tmp/release.json \
+    && url=$(jq -r '.assets[]? | select(.name=="AgroGestion_web.zip") | .browser_download_url' /tmp/release.json) \
+    && if [ -z "$url" ]; then echo "La ultima version publicada no trae AgroGestion_web.zip" >&2; exit 1; fi \
+    && curl -fsSL -o /tmp/web.zip "$url" \
+    && unzip -q /tmp/web.zip -d /app \
+    && test -f /app/index.html \
     && for f in AgroGestion.apk AgroGestion_windows.zip version.json; do \
          url=$(jq -r --arg f "$f" '.assets[]? | select(.name==$f) | .browser_download_url' /tmp/release.json); \
          if [ -z "$url" ] || ! curl -fsSL -o "/d/$f" "$url"; then rm -f /d/*; break; fi; \
@@ -48,7 +30,7 @@ COPY portada/css /usr/share/nginx/html/css
 COPY portada/js /usr/share/nginx/html/js
 COPY portada/img /usr/share/nginx/html/img
 COPY portada/fonts /usr/share/nginx/html/fonts
-COPY --from=build /app/build/web /usr/share/nginx/html/app
-COPY --from=descargas /d /usr/share/nginx/html/descargas
+COPY --from=publicado /app /usr/share/nginx/html/app
+COPY --from=publicado /d /usr/share/nginx/html/descargas
 
 EXPOSE 80
