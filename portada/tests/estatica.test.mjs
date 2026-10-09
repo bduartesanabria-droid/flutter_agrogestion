@@ -133,3 +133,13 @@ test("existen los archivos para buscadores e IA", () => {
     assert.ok(existsSync(join(RAIZ, ruta)), ruta);
   }
 });
+
+test("las tarjetas de un mismo grupo tienen textos de largo parecido", () => {
+  const documento = dom("index.html");
+  for (const grupo of documento.querySelectorAll(".grid")) {
+    const largos = [...grupo.querySelectorAll(":scope > .card p")].map((p) => p.textContent.trim().length);
+    if (largos.length < 2) continue;
+    const proporcion = Math.max(...largos) / Math.min(...largos);
+    assert.ok(proporcion <= 1.3, `textos muy desparejos: ${largos.join(", ")}`);
+  }
+});
