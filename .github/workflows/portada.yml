@@ -31,6 +31,7 @@ jobs:
       - name: Construir la imagen
         run: |
           docker build \
+            --build-arg REGISTRO=mirror.gcr.io/library \
             --build-arg API_BASE_URL="${{ vars.API_BASE_URL || 'https://bckagestion.proyecto.sbs' }}" \
             --build-arg SOURCE_COMMIT="${{ github.sha }}" \
             -t agrogestion-web .
