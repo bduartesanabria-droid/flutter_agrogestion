@@ -1,0 +1,18 @@
+{
+  "name": "agrogestion-portada",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Portada web de AgroGestion: entrada a la aplicacion y descargas",
+  "scripts": {
+    "servir": "node scripts/servir.mjs",
+    "version": "node scripts/generar_version.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:estatica": "node --test tests/estatica.test.mjs tests/contraste.test.mjs tests/version.test.mjs",
+    "test:vistas": "node --test tests/vistas.test.mjs tests/descargas.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "puppeteer-core": "^24.0.0"
+  }
+}

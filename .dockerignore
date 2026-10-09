@@ -9,3 +9,6 @@
 build
 coverage
 *.iml
+portada/node_modules
+portada/tests
+portada/scripts

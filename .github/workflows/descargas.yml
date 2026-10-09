@@ -1,0 +1,81 @@
+name: Descargas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL || 'https://bckagestion.proyecto.sbs' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build windows --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL || 'https://bckagestion.proyecto.sbs' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/windows/x64/runner/Release
+
+  publicar:
+    name: Publicar versión y avisar al servidor
+    needs: [android, windows]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+      COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: android
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: windows
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Armar los archivos de descarga
+        run: |
+          test -f windows/agrogestion.exe
+          mkdir descargas
+          cp android/app-release.apk descargas/AgroGestion.apk
+          (cd windows && zip -qr ../descargas/AgroGestion_windows.zip .)
+          VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          node portada/scripts/generar_version.mjs descargas "$VERSION"
+      - name: Publicar la versión
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" descargas/* \
+            --title "AgroGestión build ${{ github.run_number }}" \
+            --notes "Compilación automática del commit ${{ github.sha }}." \
+            --latest
+      - name: Avisar a Coolify para que reconstruya la web
+        if: env.COOLIFY_WEBHOOK != ''
+        run: curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK"

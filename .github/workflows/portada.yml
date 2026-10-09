@@ -1,0 +1,66 @@
+name: Portada
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    name: Pruebas de la portada
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portada
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: portada/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  imagen:
+    name: Imagen completa (portada, app y descargas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen
+        run: |
+          docker build \
+            --build-arg API_BASE_URL="${{ vars.API_BASE_URL || 'https://bckagestion.proyecto.sbs' }}" \
+            --build-arg SOURCE_COMMIT="${{ github.sha }}" \
+            -t agrogestion-web .
+      - name: Levantar y comprobar rutas
+        run: |
+          docker run -d --name web -p 8080:80 agrogestion-web
+          sleep 3
+          curl -fsS http://localhost:8080/ | grep -q "Su finca, sus labores"
+          curl -fsS http://localhost:8080/privacidad.html | grep -q "Política de privacidad"
+          curl -fsS http://localhost:8080/app/ | grep -q '<base href="/app/">'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app)" = "301"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/app/ruta-que-no-existe)" = "200"
+          curl -fsS http://localhost:8080/llms.txt | grep -q "AgroGestión"
+          curl -fsS http://localhost:8080/robots.txt | grep -q "Sitemap"
+          curl -fsSI http://localhost:8080/img/app-inicio.webp | grep -qi "content-type: image/webp"
+          curl -fsSI http://localhost:8080/ | grep -qi "x-content-type-options: nosniff"
+          curl -fsSI http://localhost:8080/ | grep -qi "x-frame-options: DENY"
+      - name: Comprobar las descargas si ya hay una versión publicada
+        run: |
+          codigo=$(curl -s -o /tmp/version.json -w '%{http_code}' http://localhost:8080/descargas/version.json)
+          if [ "$codigo" = "200" ]; then
+            jq -e '.android.sha256 and .windows.sha256 and .android.bytes > 0 and .windows.bytes > 0' /tmp/version.json
+            curl -fsSI http://localhost:8080/descargas/AgroGestion.apk | grep -qi "application/vnd.android.package-archive"
+            curl -fsSI http://localhost:8080/descargas/AgroGestion.apk | grep -qi "content-disposition: attachment"
+            curl -fsSI http://localhost:8080/descargas/AgroGestion_windows.zip | grep -qi "application/zip"
+            curl -fsS http://localhost:8080/descargas/AgroGestion.apk | sha256sum | grep -q "$(jq -r .android.sha256 /tmp/version.json)"
+          else
+            test "$codigo" = "404"
+            echo "Aún no hay una versión publicada; la portada mostrará descarga no disponible."
+          fi
+      - name: Registro del contenedor si algo falló
+        if: failure()
+        run: docker logs web || true
