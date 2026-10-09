@@ -1,0 +1,14 @@
+# AgroGestión
+
+> Aplicación para llevar la finca en Colombia: siembras y sus fases, labores y jornales, pagos a trabajadores, insumos e inventario, procesos de transformación, gastos, ingresos y eventos adversos. Funciona sin internet en el celular y envía los registros pendientes al volver la señal.
+
+## Cómo usarla
+- [Aplicación web](https://agrogestion.proyecto.sbs/app/): entrar desde cualquier navegador.
+- [Descargas](https://agrogestion.proyecto.sbs/#descargas): APK para Android y programa para Windows (.zip).
+- [Política de privacidad](https://agrogestion.proyecto.sbs/privacidad.html): datos que se usan, para qué y derechos (Ley 1581 de 2012).
+
+## Roles
+- Administrador: ve y gestiona todo.
+- Agricultor: registra labores, cosechas, insumos y gastos.
+- Contador: lleva el dinero, marca pagos y ve la utilidad.
+- Experto: consulta conocimiento, glosario y novedades de la región.
