@@ -202,3 +202,14 @@ test("si la API no responde, privacidad lo dice sin inventar texto legal", async
   assert.match(estado, /No pudimos cargar la política/);
   assert.equal(oculto, true);
 });
+
+test("los botones de las tarjetas de descarga quedan alineados", async () => {
+  for (const ancho of [1000, 1280]) {
+    const pagina = await abrir(ancho);
+    const arriba = await pagina.evaluate(() =>
+      [...document.querySelectorAll(".download-card .btn")].map((b) => Math.round(b.getBoundingClientRect().top)),
+    );
+    await pagina.close();
+    assert.equal(new Set(arriba).size, 1, `botones desalineados a ${ancho} px: ${arriba}`);
+  }
+});

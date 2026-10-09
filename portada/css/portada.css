@@ -72,7 +72,7 @@
   grid-template-columns: 1.05fr 0.95fr;
   gap: var(--space-7);
   align-items: center;
-  padding: var(--space-8) 20px;
+  padding: var(--space-7) 20px var(--space-6);
 }
 .hero h1 {
   margin-bottom: var(--space-4);
@@ -125,7 +125,7 @@
 }
 .phone + .phone {
   margin-left: -28px;
-  margin-top: var(--space-7);
+  margin-top: var(--space-6);
 }
 
 /* Secciones */
@@ -227,6 +227,7 @@
 }
 .download-card .btn {
   width: 100%;
+  margin-top: auto;
 }
 .plataforma-icono {
   display: grid;
