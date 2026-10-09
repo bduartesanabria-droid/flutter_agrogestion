@@ -7,6 +7,11 @@ const double kContentMaxWidth = 880;
 Future<T?> pushScreen<T>(BuildContext context, Widget screen) =>
     Navigator.of(context).push<T>(MaterialPageRoute<T>(builder: (_) => screen));
 
+double boundedShare(BuildContext context, double share) {
+  final width = MediaQuery.sizeOf(context).width;
+  return (width < kContentMaxWidth ? width : kContentMaxWidth) * share;
+}
+
 bool isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= 900;
 
 class AgroPage extends StatelessWidget {

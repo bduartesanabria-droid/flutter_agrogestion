@@ -1,6 +1,7 @@
 import 'package:agrogestion/app/agrogestion_app.dart';
 import 'package:agrogestion/features/auth/data/auth_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,8 +24,11 @@ Future<FakeBackend> pumpApp(
   String role = 'agricultor',
   Size size = phone,
   FakeBackend? backend,
+  double textScale = 1,
 }) async {
   await tester.pumpWidget(const SizedBox());
+  tester.platformDispatcher.textScaleFactorTestValue = textScale;
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   FlutterSecureStorage.setMockInitialValues({
     'agrogestion_access_token': 'token-$role',
   });
@@ -74,4 +78,20 @@ Future<void> pumpLogin(WidgetTester tester, Size size) async {
   final auth = AuthRepository(api: api, storage: const FlutterSecureStorage());
   await tester.pumpWidget(AgroGestionApp(api: api, authRepository: auth));
   await settle(tester);
+}
+
+List<String> verticalTexts() {
+  final found = <String>[];
+  void visit(RenderObject node) {
+    if (node is RenderParagraph) {
+      final text = node.text.toPlainText();
+      if (text.trim().length >= 6 && node.size.height >= node.size.width * 3) {
+        found.add('"$text" ${node.size.width.toStringAsFixed(0)} px');
+      }
+    }
+    node.visitChildren(visit);
+  }
+
+  visit(WidgetsBinding.instance.rootElement!.renderObject!);
+  return found;
 }

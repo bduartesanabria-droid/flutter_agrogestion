@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'layout.dart';
 
 enum Tone { ok, warn, danger, info, neutral }
 
@@ -40,28 +41,31 @@ class StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = toneColors(tone);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(AgroRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 13, color: colors.foreground),
-            const SizedBox(width: 4),
-          ],
-          Flexible(
-            child: Text(
-              text.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AgroText.labelSm.copyWith(color: colors.foreground),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: boundedShare(context, 0.5)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: colors.background,
+          borderRadius: BorderRadius.circular(AgroRadius.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 13, color: colors.foreground),
+              const SizedBox(width: 4),
+            ],
+            Flexible(
+              child: Text(
+                text.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AgroText.labelSm.copyWith(color: colors.foreground),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

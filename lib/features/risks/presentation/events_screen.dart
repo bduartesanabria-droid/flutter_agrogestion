@@ -220,13 +220,14 @@ class _EventCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
           children: [
             StatusPill(
               'Severidad ${event.severity}',
               tone: severityTone(event.severity),
             ),
-            const SizedBox(width: 8),
             StatusPill(
               event.active ? 'En curso' : 'Terminado',
               tone: event.active ? Tone.warn : Tone.ok,

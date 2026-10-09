@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'layout.dart';
 
 class AgroCard extends StatelessWidget {
   const AgroCard({
@@ -274,7 +275,15 @@ class ListRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (trailing != null) ...[const SizedBox(width: 12), trailing!],
+            if (trailing != null) ...[
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: boundedShare(context, 0.42),
+                ),
+                child: trailing!,
+              ),
+            ],
           ],
         ),
       ),
@@ -307,6 +316,7 @@ class AmountText extends StatelessWidget {
     this.color = AgroColors.onSurface,
     this.style = AgroText.monoMd,
     this.alignment = Alignment.centerRight,
+    this.maxShare = 0.42,
     super.key,
   });
 
@@ -314,16 +324,20 @@ class AmountText extends StatelessWidget {
   final Color color;
   final TextStyle style;
   final Alignment alignment;
+  final double maxShare;
 
   @override
-  Widget build(BuildContext context) => FittedBox(
-    fit: BoxFit.scaleDown,
-    alignment: alignment,
-    child: Text(
-      text,
-      maxLines: 1,
-      softWrap: false,
-      style: style.copyWith(color: color),
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: boundedShare(context, maxShare)),
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: alignment,
+      child: Text(
+        text,
+        maxLines: 1,
+        softWrap: false,
+        style: style.copyWith(color: color),
+      ),
     ),
   );
 }

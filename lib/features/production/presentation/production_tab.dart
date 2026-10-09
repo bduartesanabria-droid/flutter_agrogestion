@@ -84,18 +84,25 @@ class _ProductionTabState extends State<ProductionTab> {
             Row(
               children: [
                 Expanded(child: Text('Producción', style: AgroText.headlineMd)),
-                if (access.seesProcesses)
-                  TextLinkButton(
-                    'Procesos',
-                    () => pushScreen(context, const ProcessesScreen()),
-                    icon: Icons.precision_manufacturing_outlined,
+                Flexible(
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    children: [
+                      if (access.seesProcesses)
+                        TextLinkButton(
+                          'Procesos',
+                          () => pushScreen(context, const ProcessesScreen()),
+                          icon: Icons.precision_manufacturing_outlined,
+                        ),
+                      if (access.managesCatalog)
+                        TextLinkButton(
+                          'Catálogo',
+                          () => pushScreen(context, const CropsScreen()),
+                          icon: Icons.menu_book_outlined,
+                        ),
+                    ],
                   ),
-                if (access.managesCatalog)
-                  TextLinkButton(
-                    'Catálogo',
-                    () => pushScreen(context, const CropsScreen()),
-                    icon: Icons.menu_book_outlined,
-                  ),
+                ),
               ],
             ),
             const Gap(8),
@@ -324,10 +331,11 @@ class _PlantingCardState extends State<PlantingCard> {
                 orElse: () => phases.last,
               );
               final ratio = done / phases.length;
-              return SizedBox(
-                height: 44,
+              return ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(

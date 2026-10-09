@@ -131,9 +131,10 @@ class _ProcessCard extends StatelessWidget {
           style: AgroText.bodySm,
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 36,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 36),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

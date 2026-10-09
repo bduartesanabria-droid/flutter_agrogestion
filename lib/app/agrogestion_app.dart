@@ -88,9 +88,15 @@ class _AgroGestionAppState extends State<AgroGestionApp> {
       title: 'AgroGestión',
       debugShowCheckedModeBanner: false,
       theme: buildAgroGestionTheme(),
-      builder: (context, child) => controller == null
-          ? child!
-          : AppScope(controller: controller, child: child!),
+      builder: (context, child) {
+        final limited = MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.3,
+          child: child!,
+        );
+        return controller == null
+            ? limited
+            : AppScope(controller: controller, child: limited);
+      },
       home: _isRestoring
           ? const _LoadingScreen()
           : controller == null

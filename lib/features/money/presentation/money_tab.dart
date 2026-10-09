@@ -145,6 +145,7 @@ class _MoneyTabState extends State<MoneyTab> {
                           formatCop(flow.balance),
                           style: AgroText.monoXl.copyWith(fontSize: 30),
                           alignment: Alignment.centerLeft,
+                          maxShare: 0.7,
                         ),
                         const SizedBox(width: 6),
                         Padding(
