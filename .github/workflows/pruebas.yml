@@ -62,7 +62,7 @@ jobs:
             ruta: build/app/outputs/flutter-apk/app-release.apk
           - destino: web
             sistema: ubuntu-latest
-            comando: flutter build web --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+            comando: flutter build web --release --base-href /app/ --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
             ruta: build/web
           - destino: windows
             sistema: windows-latest
@@ -71,6 +71,9 @@ jobs:
     runs-on: ${{ matrix.sistema }}
     steps:
       - uses: actions/checkout@v4
+      - name: Comprobar la dirección del servidor
+        shell: bash
+        run: test -n "${{ vars.API_BASE_URL }}" || { echo "Falta la variable API_BASE_URL"; exit 1; }
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -81,3 +84,29 @@ jobs:
         with:
           name: agrogestion-${{ matrix.destino }}
           path: ${{ matrix.ruta }}
+
+  descargas:
+    name: descargas (apk, zip de windows y version.json)
+    needs: [paquetes]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agrogestion-android
+          path: android
+      - uses: actions/download-artifact@v4
+        with:
+          name: agrogestion-windows
+          path: windows
+      - name: Armar la carpeta de descargas
+        run: |
+          mkdir descargas
+          cp android/app-release.apk descargas/AgroGestion.apk
+          (cd windows && zip -qr ../descargas/AgroGestion_windows.zip .)
+          test -f windows/agrogestion.exe
+          node tool/version_descargas.mjs descargas
+      - uses: actions/upload-artifact@v4
+        with:
+          name: descargas
+          path: descargas
