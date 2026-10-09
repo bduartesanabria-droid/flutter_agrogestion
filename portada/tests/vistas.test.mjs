@@ -213,3 +213,32 @@ test("los botones de las tarjetas de descarga quedan alineados", async () => {
     assert.equal(new Set(arriba).size, 1, `botones desalineados a ${ancho} px: ${arriba}`);
   }
 });
+
+test("el menu es una pastilla flotante que sigue visible al bajar la pagina", async () => {
+  for (const ancho of [390, 1280]) {
+    const pagina = await abrir(ancho);
+    await pagina.evaluate(() => window.scrollTo(0, 1800));
+    const datos = await pagina.evaluate(() => {
+      const barra = document.querySelector(".nav-bar").getBoundingClientRect();
+      const boton = document.querySelector(".nav-cta").getBoundingClientRect();
+      return { arriba: barra.top, boton: boton.top, redondeo: getComputedStyle(document.querySelector(".nav-bar")).borderRadius };
+    });
+    await pagina.close();
+    assert.ok(datos.arriba >= 0 && datos.arriba <= 24, `la barra no queda arriba a ${ancho} px: ${datos.arriba}`);
+    assert.ok(datos.boton >= 0 && datos.boton <= 90, `el boton se sale a ${ancho} px`);
+    assert.notEqual(datos.redondeo, "0px");
+  }
+});
+
+test("la barra no tapa el titulo de la portada", async () => {
+  for (const ancho of [390, 1280]) {
+    const pagina = await abrir(ancho);
+    const sobreponen = await pagina.evaluate(() => {
+      const barra = document.querySelector(".nav-bar").getBoundingClientRect();
+      const titulo = document.querySelector("h1").getBoundingClientRect();
+      return barra.bottom > titulo.top;
+    });
+    await pagina.close();
+    assert.equal(sobreponen, false, `la barra tapa el titulo a ${ancho} px`);
+  }
+});
