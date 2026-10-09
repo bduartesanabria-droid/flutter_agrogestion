@@ -51,6 +51,7 @@ jobs:
         run: |
           docker run -d --name web -p 8080:80 agrogestion-web
           sleep 3
+          cab() { curl -fsSI "$1" > /tmp/cab.txt && grep -qi "$2" /tmp/cab.txt; }
           curl -fsS http://localhost:8080/ | grep -q "Su finca, sus labores"
           curl -fsS http://localhost:8080/privacidad.html | grep -q "Política de privacidad"
           curl -fsS http://localhost:8080/app/ | grep -q '<base href="/app/">'
