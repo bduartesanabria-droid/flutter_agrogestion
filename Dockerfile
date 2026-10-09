@@ -25,7 +25,7 @@ RUN echo "commit ${SOURCE_COMMIT}" \
 FROM ${REGISTRO}/nginx:stable-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY portada/index.html portada/privacidad.html portada/llms.txt portada/robots.txt portada/sitemap.xml /usr/share/nginx/html/
+COPY portada/index.html portada/privacidad.html portada/llms.txt portada/robots.txt portada/sitemap.xml portada/flutter_service_worker.js /usr/share/nginx/html/
 COPY portada/css /usr/share/nginx/html/css
 COPY portada/js /usr/share/nginx/html/js
 COPY portada/img /usr/share/nginx/html/img

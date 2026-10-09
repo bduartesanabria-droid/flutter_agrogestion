@@ -9,7 +9,7 @@
     "version": "node scripts/generar_version.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:estatica": "node --test tests/estatica.test.mjs tests/contraste.test.mjs tests/version.test.mjs",
-    "test:vistas": "node --test tests/vistas.test.mjs tests/descargas.test.mjs"
+    "test:vistas": "node --test tests/vistas.test.mjs tests/descargas.test.mjs tests/serviceworker.test.mjs"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
