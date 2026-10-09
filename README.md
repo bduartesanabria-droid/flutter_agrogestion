@@ -20,9 +20,10 @@ samples, guidance on mobile development, and a full API reference.
 
 1. Crea un recurso **Docker Compose** conectado a este repositorio. Coolify
    encontrará el archivo `docker-compose.yml` en la raíz del repositorio.
-2. En las variables del recurso, define `API_BASE_URL` con la URL pública HTTPS
-   de la API, por ejemplo `https://api.example.com`. El Compose la pasa como
-   argumento de build porque queda compilada dentro de Flutter Web.
+2. La web y las descargas ya salen compiladas por el workflow `Descargas`
+   (con la URL de la API de la variable `API_BASE_URL` del repositorio). La
+   imagen solo las descarga de la última versión publicada, por eso el
+   despliegue tarda segundos y no compila Flutter.
 3. Asigna el dominio de la aplicación al servicio `agrogestion` en el puerto
    `80`. Coolify puede encargarse del proxy y del certificado HTTPS.
 
@@ -42,5 +43,4 @@ La aplicación usa almacenamiento seguro del navegador para la sesión, por lo
 que el despliegue debe servirse mediante HTTPS.
 
 Si prefieres desplegar con el recurso **Dockerfile** en vez de Docker Compose,
-usa el `Dockerfile` de la raíz y configura `API_BASE_URL` como argumento de
-build.
+usa el `Dockerfile` de la raíz; no necesita argumentos de build.

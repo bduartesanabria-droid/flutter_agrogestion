@@ -4,6 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        API_BASE_URL: ${API_BASE_URL:?Define API_BASE_URL en las variables de Coolify}
+        SOURCE_COMMIT: ${SOURCE_COMMIT:-sin-commit}
     expose:
       - "80"
