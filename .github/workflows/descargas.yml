@@ -37,9 +37,24 @@ jobs:
           name: windows
           path: build/windows/x64/runner/Release
 
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web --release --base-href /app/ --dart-define=API_BASE_URL=${{ vars.API_BASE_URL || 'https://bckagestion.proyecto.sbs' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: build/web
+
   publicar:
     name: Publicar versión y avisar al servidor
-    needs: [android, windows]
+    needs: [android, windows, web]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -57,15 +72,21 @@ jobs:
         with:
           name: windows
           path: windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: web
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Armar los archivos de descarga
         run: |
           test -f windows/agrogestion.exe
+          test -f web/index.html
           mkdir descargas
           cp android/app-release.apk descargas/AgroGestion.apk
           (cd windows && zip -qr ../descargas/AgroGestion_windows.zip .)
+          (cd web && zip -qr ../descargas/AgroGestion_web.zip .)
           VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
           node portada/scripts/generar_version.mjs descargas "$VERSION"
       - name: Publicar la versión
