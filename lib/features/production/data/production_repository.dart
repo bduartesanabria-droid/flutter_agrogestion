@@ -188,6 +188,7 @@ class ProductionRepository {
     String? quality,
   }) => _backend.post(
     'fincas/$farmId/cosechas',
+    queueAs: 'Cosecha',
     body: {
       'ciclo_id': cycleId,
       'cantidad': quantity,

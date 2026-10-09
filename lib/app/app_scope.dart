@@ -4,6 +4,7 @@ import '../core/access/access.dart';
 import '../core/api/api_client.dart';
 import '../core/api/backend.dart';
 import '../core/api/offline_cache.dart';
+import '../core/api/offline_queue.dart';
 import '../features/account/data/account_repository.dart';
 import '../features/auth/domain/auth_session.dart';
 import '../features/content/data/content_repository.dart';
@@ -29,6 +30,7 @@ class AppController extends ChangeNotifier {
          api,
          session.token,
          cache: OfflineCache(session.userId),
+         queue: OfflineQueue(session.userId),
        ) {
     farmsRepo = FarmRepository(backend);
     production = ProductionRepository(backend);

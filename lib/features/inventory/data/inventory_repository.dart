@@ -96,6 +96,7 @@ class InventoryRepository {
   }) => _backend.post(
     'fincas/$farmId/insumos/entrada',
     idempotent: true,
+    queueAs: 'Entrada de insumo',
     body: {
       'insumo_id': supplyId,
       'cantidad': quantity,
@@ -113,6 +114,7 @@ class InventoryRepository {
   }) => _backend.post(
     'fincas/$farmId/insumos/consumo',
     idempotent: true,
+    queueAs: 'Consumo de insumo',
     body: {
       'insumo_id': supplyId,
       'cantidad': quantity,

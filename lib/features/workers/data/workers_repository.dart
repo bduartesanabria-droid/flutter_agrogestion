@@ -1,4 +1,5 @@
 import '../../../core/api/backend.dart';
+import '../../../core/api/offline_queue.dart';
 
 class Worker {
   const Worker({
@@ -81,30 +82,28 @@ class WorkersRepository {
     required double dailyValue,
     String? workerId,
   }) async {
-    final activity = await _backend.post(
-      'fincas/$farmId/actividades',
-      body: {
+    final result = await _backend.chain('Labor $name', [
+      QueueStep('fincas/$farmId/actividades', {
         'ciclo_id': cycleId,
         'nombre': name,
         'fase': phase,
         'fecha_inicio': date,
         'area_trabajada': workedArea,
-      },
-    );
-    final activityId = activity['id'] as String;
-    await _backend.post(
-      'fincas/$farmId/jornales',
-      idempotent: true,
-      body: {
-        'trabajador_id': ?workerId,
-        'actividad_id': activityId,
-        'ciclo_id': cycleId,
-        'fecha': date,
-        'obreros': workers,
-        'dias': days,
-        'valor_jornal': dailyValue,
-      },
-    );
-    return activityId;
+      }, newIdempotencyKey()),
+      QueueStep(
+        'fincas/$farmId/jornales',
+        {
+          'trabajador_id': ?workerId,
+          'ciclo_id': cycleId,
+          'fecha': date,
+          'obreros': workers,
+          'dias': days,
+          'valor_jornal': dailyValue,
+        },
+        newIdempotencyKey(),
+        bindField: 'actividad_id',
+      ),
+    ]);
+    return result['id'] as String? ?? '';
   }
 }

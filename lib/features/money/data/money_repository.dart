@@ -105,6 +105,7 @@ class MoneyRepository {
   }) => _backend.post(
     'fincas/$farmId/gastos',
     idempotent: true,
+    queueAs: 'Gasto de $category',
     body: {
       'categoria': category,
       'monto': amount,
@@ -124,6 +125,7 @@ class MoneyRepository {
   }) => _backend.post(
     'fincas/$farmId/ingresos',
     idempotent: true,
+    queueAs: 'Ingreso de $category',
     body: {
       'categoria': category,
       'cantidad': quantity,

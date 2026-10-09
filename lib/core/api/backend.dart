@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 import 'offline_cache.dart';
+import 'offline_queue.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -27,12 +28,104 @@ String newIdempotencyKey() {
 }
 
 class Backend {
-  Backend(this.api, this.token, {this.cache});
+  Backend(this.api, this.token, {this.cache, this.queue}) {
+    unawaited(_refreshPending());
+  }
 
   final ApiClient api;
   final String token;
   final OfflineCache? cache;
+  final OfflineQueue? queue;
   final ValueNotifier<bool> offline = ValueNotifier(false);
+  final ValueNotifier<int> pending = ValueNotifier(0);
+  final ValueNotifier<String?> notice = ValueNotifier(null);
+  bool _syncing = false;
+
+  Future<void> _refreshPending() async {
+    pending.value = (await queue?.load())?.length ?? 0;
+  }
+
+  Future<Json> _enqueue(String label, List<QueueStep> steps) async {
+    await queue!.add(PendingOp(newIdempotencyKey(), label, steps));
+    await _refreshPending();
+    offline.value = true;
+    notice.value = 'Guardado en el celular. Se enviará cuando haya señal.';
+    return {'pendiente': true};
+  }
+
+  Future<Json> _sendStep(QueueStep step) async {
+    final data = await api.send(
+      'POST',
+      step.path,
+      body: step.body,
+      token: token,
+      idempotencyKey: step.key,
+    );
+    return data is Json ? data : <String, dynamic>{};
+  }
+
+  Future<Json> chain(String label, List<QueueStep> steps) async {
+    Json? last;
+    for (var i = 0; i < steps.length; i++) {
+      final step = steps[i].bound(last);
+      try {
+        last = await _sendStep(step);
+      } on ApiException {
+        rethrow;
+      } catch (_) {
+        if (queue == null) rethrow;
+        return _enqueue(label, [step, ...steps.skip(i + 1)]);
+      }
+    }
+    return last ?? <String, dynamic>{};
+  }
+
+  Future<int> syncPending() async {
+    if (_syncing || queue == null) return 0;
+    _syncing = true;
+    var sent = 0;
+    try {
+      for (final op in await queue!.load()) {
+        Json? last;
+        var steps = List<QueueStep>.of(op.steps);
+        var stop = false;
+        var rejected = false;
+        while (steps.isNotEmpty) {
+          final step = steps.first.bound(last);
+          try {
+            last = await _sendStep(step);
+            steps = steps.skip(1).toList();
+            if (steps.isNotEmpty) await queue!.replaceSteps(op.id, steps);
+          } on ApiException catch (error) {
+            if (error.statusCode == 401) {
+              stop = true;
+            } else {
+              steps = [];
+              rejected = true;
+              notice.value =
+                  'No se pudo enviar "${op.label}": ${error.message}';
+            }
+            break;
+          } catch (_) {
+            stop = true;
+            break;
+          }
+        }
+        if (stop) break;
+        await queue!.remove(op.id);
+        if (!rejected) sent++;
+      }
+    } finally {
+      _syncing = false;
+      await _refreshPending();
+    }
+    if (sent > 0) {
+      notice.value = sent == 1
+          ? 'Se envió 1 registro pendiente.'
+          : 'Se enviaron $sent registros pendientes.';
+    }
+    return sent;
+  }
 
   Future<Object?> _read(String path, Map<String, String>? query) async {
     final sorted = (query ?? const <String, String>{}).entries.toList()
@@ -44,6 +137,7 @@ class Backend {
           .timeout(const Duration(seconds: 20));
       offline.value = false;
       unawaited(cache?.save(id, data));
+      if (pending.value > 0) unawaited(syncPending());
       return data;
     } on ApiException {
       rethrow;
@@ -91,7 +185,11 @@ class Backend {
     String path, {
     Object? body,
     bool idempotent = false,
+    String? queueAs,
   }) async {
+    if (queueAs != null && body is Map<String, dynamic>) {
+      return chain(queueAs, [QueueStep(path, body, newIdempotencyKey())]);
+    }
     final data = await api.send(
       'POST',
       path,

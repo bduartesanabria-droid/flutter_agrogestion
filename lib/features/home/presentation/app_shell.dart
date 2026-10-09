@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/app_scope.dart';
+import '../../../core/api/backend.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/layout.dart';
 import '../../account/presentation/account_screen.dart';
@@ -28,8 +29,48 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _index = 0;
+  Backend? _backend;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final backend = context.app.backend;
+    if (identical(backend, _backend)) return;
+    _backend?.notice.removeListener(_showNotice);
+    _backend = backend..notice.addListener(_showNotice);
+    if (backend.pending.value > 0) backend.syncPending();
+  }
+
+  void _showNotice() {
+    final text = _backend?.notice.value;
+    if (text == null || !mounted) return;
+    _backend!.notice.value = null;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _backend!.pending.value > 0) {
+      _backend!.syncPending();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _backend?.notice.removeListener(_showNotice);
+    super.dispose();
+  }
 
   List<_Destination> _destinations(BuildContext context) {
     final access = context.app.access;
@@ -80,7 +121,7 @@ class _AppShellState extends State<AppShell> {
 
     final body = Column(
       children: [
-        _OfflineBanner(offline: controller.backend.offline),
+        _OfflineBanner(backend: controller.backend),
         Expanded(
           child: KeyedSubtree(
             key: ValueKey('${current.label}-${controller.revision}'),
@@ -134,44 +175,58 @@ class _AppShellState extends State<AppShell> {
 }
 
 class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner({required this.offline});
+  const _OfflineBanner({required this.backend});
 
-  final ValueNotifier<bool> offline;
+  final Backend backend;
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
-    valueListenable: offline,
-    builder: (context, isOffline, _) => isOffline
-        ? Semantics(
-            liveRegion: true,
-            child: Container(
-              width: double.infinity,
-              color: AgroColors.tertiaryFixed,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AgroSpace.md,
-                vertical: 10,
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.cloud_off_outlined,
-                    size: 20,
-                    color: AgroColors.tertiary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Sin conexión. Se muestra lo último guardado; registrar necesita internet.',
-                      style: AgroText.bodySm.copyWith(
-                        color: AgroColors.onSurface,
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([backend.offline, backend.pending]),
+    builder: (context, _) {
+      final isOffline = backend.offline.value;
+      final pending = backend.pending.value;
+      final message = isOffline
+          ? (pending > 0
+                ? 'Sin conexión. $pending ${pending == 1 ? 'registro pendiente' : 'registros pendientes'} de enviar.'
+                : 'Sin conexión. Se muestra lo último guardado; los registros se guardan en el celular.')
+          : '$pending ${pending == 1 ? 'registro pendiente' : 'registros pendientes'} de enviar.';
+      return isOffline || pending > 0
+          ? Semantics(
+              liveRegion: true,
+              child: Container(
+                width: double.infinity,
+                color: AgroColors.tertiaryFixed,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AgroSpace.md,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.cloud_off_outlined,
+                      size: 20,
+                      color: AgroColors.tertiary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: AgroText.bodySm.copyWith(
+                          color: AgroColors.onSurface,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    if (pending > 0)
+                      TextButton(
+                        onPressed: backend.syncPending,
+                        child: const Text('Enviar ahora'),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          )
-        : const SizedBox.shrink(),
+            )
+          : const SizedBox.shrink();
+    },
   );
 }
 

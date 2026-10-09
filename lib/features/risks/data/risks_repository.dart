@@ -85,6 +85,7 @@ class RisksRepository {
     String? notes,
   }) => _backend.post(
     'eventos-adversos',
+    queueAs: 'Evento adverso',
     body: {
       'finca_id': farmId,
       'riesgo_id': riskId,
