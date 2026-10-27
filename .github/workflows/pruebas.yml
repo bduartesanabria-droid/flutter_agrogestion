@@ -69,6 +69,9 @@ jobs:
             comando: flutter build windows --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
             ruta: build/windows/x64/runner/Release
     runs-on: ${{ matrix.sistema }}
+    env:
+      FIRMA_ANDROID: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+      FIRMA_WINDOWS: ${{ secrets.WINDOWS_PFX_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Comprobar la dirección del servidor
@@ -79,7 +82,53 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - name: Preparar la firma de Android
+        if: matrix.destino == 'android' && env.FIRMA_ANDROID == 'true'
+        shell: bash
+        env:
+          ALMACEN: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          CLAVE: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ALMACEN" | base64 -d > android/app/agrogestion-release.jks
+          printf 'storeFile=app/agrogestion-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$CLAVE" "$ALIAS" "$CLAVE" > android/key.properties
       - run: ${{ matrix.comando }}
+      - name: Verificar la firma del APK
+        if: matrix.destino == 'android'
+        shell: bash
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -1)
+          "$APKSIGNER" verify --verbose --print-certs ${{ matrix.ruta }} | tee firma.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" firma.txt
+          if [ "$FIRMA_ANDROID" != "true" ]; then
+            echo "::warning::APK firmado con la clave de depuración, faltan los secretos de firma"
+          elif grep -qi "Android Debug" firma.txt; then
+            echo "El APK quedó firmado con la clave de depuración"
+            exit 1
+          fi
+      - name: Firmar el ejecutable de Windows
+        if: matrix.destino == 'windows' && env.FIRMA_WINDOWS == 'true'
+        shell: pwsh
+        env:
+          PFX: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          CLAVE: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+        run: |
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\firma.pfx", [Convert]::FromBase64String($env:PFX))
+          $signtool = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object FullName | Select-Object -Last 1).FullName
+          $carpeta = "build/windows/x64/runner/Release"
+          $archivos = Get-ChildItem $carpeta -Include *.exe, *.dll -Recurse
+          foreach ($archivo in $archivos) {
+            & $signtool sign /f "$env:RUNNER_TEMP\firma.pfx" /p $env:CLAVE /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $archivo.FullName
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo firmar $($archivo.Name)" }
+          }
+          $estado = Get-AuthenticodeSignature "$carpeta/agrogestion.exe"
+          if ($null -eq $estado.SignerCertificate) { throw "El ejecutable quedó sin firma" }
+          "Firmado por: $($estado.SignerCertificate.Subject)"
+      - name: Aviso de Windows sin firma
+        if: matrix.destino == 'windows' && env.FIRMA_WINDOWS != 'true'
+        shell: bash
+        run: |
+          echo "::warning::Ejecutable de Windows sin firma, faltan los secretos de firma"
       - uses: actions/upload-artifact@v4
         with:
           name: agrogestion-${{ matrix.destino }}
@@ -104,6 +153,7 @@ jobs:
           mkdir descargas
           cp android/app-release.apk descargas/AgroGestion.apk
           (cd windows && zip -qr ../descargas/AgroGestion_windows.zip .)
+          cp firma/AgroGestion.cer descargas/AgroGestion_certificado.cer
           test -f windows/agrogestion.exe
           node tool/version_descargas.mjs descargas
       - uses: actions/upload-artifact@v4
